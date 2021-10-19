@@ -1,3 +1,5 @@
+package com.Game.core;
+
 public class Map {
 
     private int[][] map;

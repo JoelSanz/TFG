@@ -1,3 +1,5 @@
+package com.Game.core;
+
 import javax.swing.*;
 import java.awt.*;
 

@@ -1,3 +1,7 @@
+package com.Game.core;
+
+import com.Game.core.Map;
+
 import java.io.FileInputStream;
 import java.io.InputStreamReader;
 import java.util.Scanner;
