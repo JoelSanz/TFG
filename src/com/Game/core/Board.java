@@ -1,32 +1,43 @@
 package com.Game.core;
 
 import com.Game.Towers.*;
+import com.Game.InputHandler.*;
+
 import javax.imageio.ImageIO;
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
-import java.util.*;
+import java.util.Random;
+
 //import java.nio.Buffer;
 
-public class Board extends JPanel {
+public class Board extends JPanel implements Runnable {
+
+    Thread thread = new Thread(this);
     static GraphicsDevice device = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice();
     int h = device.getDisplayMode().getHeight();
     int w = device.getDisplayMode().getWidth();
     Map map = new Map();
     private Tower[][] towerMap = new Tower[22][18];
     private BufferedImage background;
-    private final int CELL_SIZE=40;
+    private final int CELL_SIZE=53;
+    private Frame frame;
+    MouseInput mouse = new MouseInput();
 
-    public Board(){
+    public Board(Frame frame){
+        this.frame = frame;
+        //Component textArea = new TextArea("Click here");
         initBoard();
+        this.frame.addMouseListener(mouse);
     }
     private void initBoard(){
+
         loadImage();
-
-
-        setPreferredSize(new Dimension(1920, 1080));
+        //setPreferredSize(new Dimension(h, w));
     }
     private void loadImage(){
         try{
@@ -35,13 +46,14 @@ public class Board extends JPanel {
             System.out.println("Image could not be loaded");
         }
 
-        background = scale(background, 1920, 1080);
+        background = scale(background, w, h);
 
 
     }
 
     @Override
     public void paintComponent(Graphics g){
+
         Graphics2D g2 =  (Graphics2D) g;
         g.drawImage(background, 0, 0, null);
         drawGameMap(g2);
@@ -52,11 +64,12 @@ public class Board extends JPanel {
         drawOptionsMenu(g2);
         testTowerMap(5);
         drawTowerMap(g2);
+        //thread.start();
 
     }
 
     private void testTowerMap(int iterations) {
-        for (int i = 0; i < iterations; i++){
+        for (int i = 0; i <= iterations; i++){
             boolean pass = true;
             int upperbound = 0, xPlace = 0, yPlace = 0;
 
@@ -91,7 +104,7 @@ public class Board extends JPanel {
                     }
 
 
-                    System.out.println("en teoria hay una torre");
+
                     pass = false;
                 }else{
                     System.out.println("Ya hay torre o es camino");
@@ -162,14 +175,20 @@ public class Board extends JPanel {
     private void drawBottomMenu(Graphics2D g2){
         int xInit = CELL_SIZE;
         int yInit = CELL_SIZE * 20;
-        g2.drawRect(xInit, yInit, CELL_SIZE * 22, h - CELL_SIZE * 30);
+        g2.drawRect(xInit, yInit, CELL_SIZE * 22, CELL_SIZE * 6);
 
     }
 
     private void drawTowerMenu(Graphics2D g2){
+        MouseEvent e = mouse.getEvent();
         int xInit = CELL_SIZE * 24 ;
         int yInit = CELL_SIZE;
         g2.drawRect( xInit, yInit, CELL_SIZE * 11,CELL_SIZE * 11 );
+        if (e != null) {
+            if (e.getLocationOnScreen().x >= xInit && e.getLocationOnScreen().x <= xInit + CELL_SIZE * 11 && e.getLocationOnScreen().y >= yInit && e.getLocationOnScreen().y <= yInit + CELL_SIZE * 11) {
+                System.out.println("Estas en el menu de torre");
+            }
+        }
     }
 
     private void drawBonusMenu(Graphics2D g2){
@@ -194,4 +213,9 @@ public class Board extends JPanel {
 
     }
 
+    @Override
+    public void run() {
+
+
+    }
 }
