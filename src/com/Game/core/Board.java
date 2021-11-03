@@ -6,8 +6,6 @@ import com.Game.InputHandler.*;
 import javax.imageio.ImageIO;
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
@@ -17,7 +15,9 @@ import java.util.Random;
 
 public class Board extends JPanel implements Runnable {
 
+    boolean tested = false;
     Thread thread = new Thread(this);
+    JButton templateButton = new JButton();
     static GraphicsDevice device = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice();
     int h = device.getDisplayMode().getHeight();
     int w = device.getDisplayMode().getWidth();
@@ -26,12 +26,13 @@ public class Board extends JPanel implements Runnable {
     private BufferedImage background;
     private final int CELL_SIZE=53;
     private Frame frame;
-    MouseInput mouse = new MouseInput();
+    MouseInput mouse = new MouseInput(this);
 
     public Board(Frame frame){
         this.frame = frame;
         //Component textArea = new TextArea("Click here");
         initBoard();
+
         this.frame.addMouseListener(mouse);
     }
     private void initBoard(){
@@ -54,6 +55,7 @@ public class Board extends JPanel implements Runnable {
     @Override
     public void paintComponent(Graphics g){
 
+
         Graphics2D g2 =  (Graphics2D) g;
         g.drawImage(background, 0, 0, null);
         drawGameMap(g2);
@@ -62,13 +64,12 @@ public class Board extends JPanel implements Runnable {
         drawBonusMenu(g2);
         drawInfoMenu(g2);
         drawOptionsMenu(g2);
-        testTowerMap(5);
         drawTowerMap(g2);
         //thread.start();
 
     }
 
-    private void testTowerMap(int iterations) {
+    public void testTowerMap(int iterations) {
         for (int i = 0; i <= iterations; i++){
             boolean pass = true;
             int upperbound = 0, xPlace = 0, yPlace = 0;
@@ -135,13 +136,13 @@ public class Board extends JPanel implements Runnable {
                             g2.setColor(Color.blue);
                             break;
                         case 1:
-                            g2.setColor(Color.yellow);
+                            g2.setColor(Color.green);
                             break;
                         case 2:
                             g2.setColor(Color.MAGENTA);
                             break;
                         case 3:
-                            g2.setColor(Color.GREEN);
+                            g2.setColor(Color.pink);
                             break;
                         default:
                             System.out.println("este id no existe");
@@ -179,16 +180,36 @@ public class Board extends JPanel implements Runnable {
 
     }
 
+    //TODO: Bucle para generar los botones que conforman el menu de torres
     private void drawTowerMenu(Graphics2D g2){
-        MouseEvent e = mouse.getEvent();
+
         int xInit = CELL_SIZE * 24 ;
         int yInit = CELL_SIZE;
         g2.drawRect( xInit, yInit, CELL_SIZE * 11,CELL_SIZE * 11 );
-        if (e != null) {
-            if (e.getLocationOnScreen().x >= xInit && e.getLocationOnScreen().x <= xInit + CELL_SIZE * 11 && e.getLocationOnScreen().y >= yInit && e.getLocationOnScreen().y <= yInit + CELL_SIZE * 11) {
-                System.out.println("Estas en el menu de torre");
+        for (int i = 0; i <= 3; i++){
+            switch (i){
+                case 0:
+                    g2.setColor(Color.blue);
+                    break;
+                case 1:
+                    g2.setColor(Color.green);
+                    break;
+                case 2:
+                    g2.setColor(Color.MAGENTA);
+                    break;
+                case 3:
+                    g2.setColor(Color.RED);
+                    break;
+                default:
+                    System.out.println("este id no existe");
             }
+
+            g2.drawRect( xInit + CELL_SIZE, yInit + CELL_SIZE, CELL_SIZE,CELL_SIZE);
+            xInit = xInit + CELL_SIZE*2;
+
         }
+        g2.setColor(Color.lightGray);
+
     }
 
     private void drawBonusMenu(Graphics2D g2){
@@ -215,7 +236,106 @@ public class Board extends JPanel implements Runnable {
 
     @Override
     public void run() {
+        repaint();
+        //update();
 
+    }
+
+    /**
+     * Checks which menu was clicked and calls the appropiate function
+     * @param x An integer containing the x coordinate on screen of the mouse click
+     * @param y An integer containing the y coordinate on screen of the mouse click
+     */
+    public void checkLocationClicked(int x, int y){
+
+
+        //Checks if the click was made in the Tower Menu
+
+        if(x >= CELL_SIZE * 24 && y >= CELL_SIZE && x<= CELL_SIZE * 24 + (CELL_SIZE * 11) && y <= CELL_SIZE + (CELL_SIZE * 11))
+        {
+            towerMenuClicked(x, y);
+            paintComponent(this.getGraphics());
+        }
+        //Checks if the click was made in the Bonus Menu
+
+        else  if(x >= CELL_SIZE * 36 && y >= CELL_SIZE && x<= CELL_SIZE * 36 + (CELL_SIZE * 11) && y <= CELL_SIZE + (CELL_SIZE * 11)){
+            System.out.println("click registrado en el menu de bonuses");
+        }
+
+        //Checks if the click was made in the Options menu
+
+        else if(x >= CELL_SIZE * 24 && y >= CELL_SIZE * 20 && x<= CELL_SIZE * 24 + (CELL_SIZE * 23) && y <= CELL_SIZE * 20 + (CELL_SIZE * 6)){
+            System.out.println("Click registrado en el menu de opciones");
+
+        }
+
+    }
+
+    /**
+     *  Checks where in the Tower menu the click was made
+     *  if it was made on a tower, places one tower of that type in a random location(will change into a fixed location in the future)
+     * @param x An integer containing the x coordinate on screen of the mouse click
+     * @param y An integer containing the y coordinate on screen of the mouse click
+     */
+    private void towerMenuClicked(int x, int y){
+
+        if(x >= (CELL_SIZE * 25) && y >= (CELL_SIZE * 2) && x<= (CELL_SIZE * 26) && y<= (CELL_SIZE * 3))
+        {
+            int[] position;
+            position = generateRandomPosition();
+            BlueTower tower = new BlueTower(0, 5, 5, 5);
+            towerMap[position[0]][position[1]] = tower.getTower();
+        }
+        else if(x >= (CELL_SIZE * 27) && y >= (CELL_SIZE * 2) && x<= (CELL_SIZE * 28) && y<= (CELL_SIZE * 3))
+        {
+            int[] position;
+            position = generateRandomPosition();
+            GreenTower tower = new GreenTower(1, 5, 5, 5);
+            towerMap[position[0]][position[1]] = tower.getTower();
+        }
+        else if(x >= (CELL_SIZE * 29) && y >= (CELL_SIZE * 2) && x<= (CELL_SIZE * 30) && y<= (CELL_SIZE * 3))
+        {
+            int[] position;
+            position = generateRandomPosition();
+            PurpleTower tower = new PurpleTower(2, 5, 5, 5);
+            towerMap[position[0]][position[1]] = tower.getTower();
+        }
+        else if(x >= (CELL_SIZE * 31) && y >= (CELL_SIZE * 2) && x<= (CELL_SIZE * 32) && y<= (CELL_SIZE * 3))
+        {
+            int[] position;
+            position = generateRandomPosition();
+            RedTower tower = new RedTower(3, 5, 5, 5);
+            towerMap[position[0]][position[1]] = tower.getTower();
+        }
+
+    }
+
+    /**
+     * generates a random x, y position
+     * @return An integer array containing the position generated
+     */
+    private int[] generateRandomPosition(){
+        boolean pass = true;
+        int position[] = new int[2];
+        while (pass) {
+            int upperbound = 0, xPlace = 0, yPlace = 0;
+            Random rand = new Random();
+            upperbound = 22;
+            xPlace = rand.nextInt(upperbound);
+            upperbound = 18;
+            yPlace = rand.nextInt(upperbound);
+            if (map.getPosition(xPlace, yPlace) != 1 && towerMap[xPlace][yPlace] == null) {
+
+                BlueTower blueTower = new BlueTower(0, 5, 5, 5);
+                towerMap[xPlace][yPlace] = blueTower.getTower();
+                pass = false;
+
+            }
+            position[0] = xPlace;
+            position[1] = yPlace;
+
+        }
+        return position;
 
     }
 }
