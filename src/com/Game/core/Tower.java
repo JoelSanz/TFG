@@ -2,8 +2,15 @@ package com.Game.core;
 
 public class Tower {
     private int id, range, damage, cost;
+    private String towerType;
 
-    public Tower(){}
+    public Tower(int id, int range, int damage, int cost, String towerType){
+        this.id = id;
+        this.range = range;
+        this.damage = damage;
+        this.cost = cost;
+        this.towerType = towerType;
+    }
 
     //Getters & Setters
     public void setId(int id){
@@ -35,6 +42,12 @@ public class Tower {
     }
 
     public int getRange() {
+
         return range;
     }
+
+    public String getTowerType() {
+        return towerType;
+    }
+
 }
