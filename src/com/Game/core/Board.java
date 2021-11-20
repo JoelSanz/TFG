@@ -5,6 +5,7 @@ import com.Game.InputHandler.*;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
+import javax.swing.border.StrokeBorder;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.File;
@@ -17,6 +18,7 @@ public class Board extends JPanel implements Runnable {
 
     boolean tested = false;
     Tower tower;
+    boolean activeWave;
     boolean towerClicked;
     Thread thread = new Thread(this);
     JButton templateButton = new JButton();
@@ -26,8 +28,10 @@ public class Board extends JPanel implements Runnable {
     Map map = new Map();
     private Tower[][] towerMap = new Tower[22][18];
     private BufferedImage background;
+    private BufferedImage vectoidImage;
     private final int CELL_SIZE=53;
     private Frame frame;
+    public Vectoid [] vectoidList = new Vectoid[2];
     MouseInput mouse = new MouseInput(this);
 
     public Board(Frame frame){
@@ -59,15 +63,21 @@ public class Board extends JPanel implements Runnable {
 
         Graphics2D g2 =  (Graphics2D) g;
         g.drawImage(background, 0, 0, null);
-        drawGameMap(g2);
-        drawTowerMenu(g2);
-        drawBottomMenu(g2);
-        drawBonusMenu(g2);
-        drawInfoMenu(g2);
-        drawOptionsMenu(g2);
-        drawTowerMap(g2);
+        paintGameMap(g2);
+        paintEnemyPath(g2);
+        paintTowerMenu(g2);
+        paintBottomMenu(g2);
+        paintBonusMenu(g2);
+        paintInfoMenu(g2);
+        paintOptionsMenu(g2);
+        paintTowerMap(g2);
+
         if(towerClicked){
             paintTowerClicked(g2);
+        }
+        if (activeWave) {
+            paintVectoids(g2);
+
         }
 
 
@@ -81,6 +91,7 @@ public class Board extends JPanel implements Runnable {
         //update();
 
     }
+
     //Function that placed towers at random no longer needed
     /*
     public void testTowerMap(int iterations) {
@@ -140,7 +151,7 @@ public class Board extends JPanel implements Runnable {
         }
         return scaledImage;
     }
-    private void drawTowerMap(Graphics2D g2){
+    private void paintTowerMap(Graphics2D g2){
         for(int x = 0; x < 22; x++){
             for (int y = 0; y < 18; y++){
                 if(towerMap[x][y] != null){
@@ -148,8 +159,8 @@ public class Board extends JPanel implements Runnable {
                     switch (towerMap[x][y].getId()) {
                         case 0 -> g2.setColor(Color.blue);
                         case 1 -> g2.setColor(Color.green);
-                        case 2 -> g2.setColor(Color.MAGENTA);
-                        case 3 -> g2.setColor(Color.pink);
+                        case 2 -> g2.setColor(Color.magenta);
+                        case 3 -> g2.setColor(Color.red);
                         default -> System.out.println("este id no existe");
                     }
 
@@ -162,23 +173,47 @@ public class Board extends JPanel implements Runnable {
         }
 
     }
-    private void drawGameMap(Graphics2D g2){
+    private void paintGameMap(Graphics2D g2){
+        g2.setColor(Color.lightGray);
 
         for(int x = 0; x < 22; x++){
             for (int y = 0; y < 18; y++){
-                if(map.getPosition(x, y)==1){
-                    g2.setColor(Color.RED);
-                }else{
-                    g2.setColor(Color.lightGray);
-                }
+                g2.setColor(Color.lightGray);
                 g2.drawRect(CELL_SIZE + (x * CELL_SIZE), (CELL_SIZE) + (y* CELL_SIZE), CELL_SIZE, CELL_SIZE);
 
 
             }
         }
     }
+    private void paintEnemyPath(Graphics2D g2){
+        BasicStroke stroke;
+        stroke = new BasicStroke(3,2, 2);
+        for(int x = 0; x < 22; x++) {
+            for (int y = 0; y < 18; y++) {
+                if(map.getPosition(x, y) != 0) {
+                    if (map.getPosition(x, y) == 1) {
 
-    private void drawBottomMenu(Graphics2D g2){
+                        g2.setColor(Color.white);
+                        g2.setStroke(stroke);
+                    } else if (map.getPosition(x, y) == 2) {
+                        g2.setColor(Color.yellow);
+                        g2.setStroke(stroke);
+                    } else if (map.getPosition(x, y) == 3) {
+                        g2.setColor(Color.black);
+                        g2.setStroke(stroke);
+
+                    }
+                    g2.drawRect(CELL_SIZE + (x * CELL_SIZE), (CELL_SIZE) + (y* CELL_SIZE), CELL_SIZE, CELL_SIZE);
+                }
+            }
+        }
+        stroke = new BasicStroke(1, 2, 2);
+        g2.setStroke(stroke);
+
+    }
+
+    private void paintBottomMenu(Graphics2D g2){
+        g2.setColor(Color.lightGray);
         int xInit = CELL_SIZE;
         int yInit = CELL_SIZE * 20;
         g2.drawRect(xInit, yInit, CELL_SIZE * 22, CELL_SIZE * 6);
@@ -186,7 +221,8 @@ public class Board extends JPanel implements Runnable {
     }
 
     //TODO: Bucle para generar los botones que conforman el menu de torres
-    private void drawTowerMenu(Graphics2D g2){
+    private void paintTowerMenu(Graphics2D g2){
+        g2.setColor(Color.lightGray);
 
         int xInit = CELL_SIZE * 24 ;
         int yInit = CELL_SIZE;
@@ -208,29 +244,54 @@ public class Board extends JPanel implements Runnable {
 
     }
 
-    private void drawBonusMenu(Graphics2D g2){
+    private void paintBonusMenu(Graphics2D g2){
+        g2.setColor(Color.lightGray);
         int xInit = CELL_SIZE * 36;
         int yInit = CELL_SIZE;
         g2.drawRect( xInit, yInit, CELL_SIZE * 11,CELL_SIZE * 11 );
 
     }
 
-    private void drawInfoMenu(Graphics2D g2){
+    private void paintInfoMenu(Graphics2D g2){
+        g2.setColor(Color.lightGray);
         int xInit = CELL_SIZE * 24 ;
         int yInit = CELL_SIZE * 13;
         g2.drawRect( xInit, yInit, CELL_SIZE * 23,CELL_SIZE * 6 );
 
     }
 
-    private void drawOptionsMenu(Graphics2D g2){
+    private void paintOptionsMenu(Graphics2D g2){
+        g2.setColor(Color.lightGray);
+
         int xInit = CELL_SIZE * 24 ;
         int yInit = CELL_SIZE * 20;
         g2.drawRect( xInit, yInit, CELL_SIZE * 23,CELL_SIZE * 6 );
 
+        //Draw Spawn vectoids button
+        g2.drawRect(xInit + CELL_SIZE, yInit + CELL_SIZE, CELL_SIZE * 5, CELL_SIZE * 2);
+        g2.setFont(new Font("Times New Roman", Font.PLAIN, 30));
+        g2.drawString("Spawn Vectoids", xInit + CELL_SIZE*2, yInit + CELL_SIZE *2);
+
 
     }
 
+    private void paintVectoids(Graphics2D g2){
+        try{
+            vectoidImage = ImageIO.read(new File("resources/Vectoids/BlueVectoid.png"));
+        }catch (IOException e){
+            System.out.println("Image could not be loaded");
+        }
 
+        for (Vectoid v : vectoidList) {
+            Point p = v.getCurrentPosition();
+            g2.drawImage(vectoidImage, (p.x + 1) * CELL_SIZE + (vectoidImage.getWidth() / 2), (p.y + 1) * CELL_SIZE + (vectoidImage.getHeight() / 2), null);
+
+        }
+
+
+
+
+    }
 
 
     /**
@@ -251,13 +312,14 @@ public class Board extends JPanel implements Runnable {
         //Checks if the click was made in the Bonus Menu
 
         else  if(x >= CELL_SIZE * 36 && y >= CELL_SIZE && x<= CELL_SIZE * 36 + (CELL_SIZE * 11) && y <= CELL_SIZE + (CELL_SIZE * 11)){
-            System.out.println("click registrado en el menu de bonuses");
+
+            System.out.println("Click registrado en el menu de bonus");
         }
 
         //Checks if the click was made in the Options menu
 
         else if(x >= CELL_SIZE * 24 && y >= CELL_SIZE * 20 && x<= CELL_SIZE * 24 + (CELL_SIZE * 23) && y <= CELL_SIZE * 20 + (CELL_SIZE * 6)){
-            System.out.println("Click registrado en el menu de opciones");
+            optionsMenuClicked(x, y);
 
         }
 
@@ -274,6 +336,14 @@ public class Board extends JPanel implements Runnable {
 
     }
 
+    private void optionsMenuClicked(int x, int y){
+        System.out.println("checking location");
+        if(x >= (CELL_SIZE * 25) && y >= (CELL_SIZE * 21) && x<= (CELL_SIZE * 30) && y<= (CELL_SIZE * 23)){
+            newWave();
+
+
+        }
+    }
     /**
      *  Checks where in the Tower menu the click was made
      *  if it was made on a tower, places one tower of that type in a random location(will change into a fixed location in the future)
@@ -303,6 +373,34 @@ public class Board extends JPanel implements Runnable {
             towerClicked = true;
         }
 
+    }
+    public void newWave(){
+
+        Wave w =  new Wave(this);
+        w.setSpawnPoint(getSpawnPoints());
+        vectoidList = new Vectoid[2];
+        w.startWave(2);
+
+        activeWave = true;
+
+
+
+    }
+    public Point[] getSpawnPoints(){
+        Point s;
+        Point[] spawnPoints = new Point[2];
+        int i = 0;
+        for(int x = 0; x < 22; x++) {
+            for (int y = 0; y < 18; y++) {
+                if (map.getPosition(x, y) == 2) {
+                    s = new Point(x, y);
+                    spawnPoints[i] = s;
+                    i++;
+                }
+
+            }
+        }
+        return spawnPoints;
     }
     //Generate Random position function no longer needed
 /*
@@ -370,7 +468,7 @@ public class Board extends JPanel implements Runnable {
 
         int posX = x / CELL_SIZE;
         int posY = y / CELL_SIZE;
-        if(map.getPosition(posX-1, posY-1)==1) {
+        if(map.getPosition(posX-1, posY-1)!=0) {
             System.out.println("Can't place a tower there");
         }else{
             towerMap[posX-1][posY-1] = tower;
@@ -378,6 +476,7 @@ public class Board extends JPanel implements Runnable {
 
 
     }
+
 }
 
 
