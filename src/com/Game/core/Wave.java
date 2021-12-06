@@ -23,15 +23,18 @@ public class Wave {
     }
     public void spawnVectoid(){
         int i = 0;
+        int j = 0;
         while(spawned < vectoidsThisWave){
 
-            v = new BlueVectoid(1, 1, 100, 1, "blue");
+            v = new BlueVectoid(1, 1, 100, 1, "blue", 0);
             v.setCurrentPosition(spawnPoint[i]);
+            v.setPrevPosition(spawnPoint[i]);
             //this could be done with a set function
-            board.vectoidList[i] = v;
+            board.vectoidList[j] = v;
             spawned++;
-            i++;
-
+            if(spawnPoint[i + 1] != null)
+                i++;
+            j++;
         }
     }
     public void setSpawnPoint(Point[] p) {

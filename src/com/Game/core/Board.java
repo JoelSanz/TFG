@@ -13,8 +13,9 @@ import java.io.IOException;
 //import java.nio.Buffer;
 
 public class Board extends JPanel implements Runnable {
-
+    private VectoidAI ai;
     boolean tested = false;
+    private int frameCount = 0;
     boolean showRanges =  true;
     Tower tower;
     boolean activeWave;
@@ -30,7 +31,7 @@ public class Board extends JPanel implements Runnable {
     private BufferedImage vectoidImage;
     private final int CELL_SIZE=53;
     private Frame frame;
-    public Vectoid [] vectoidList = new Vectoid[2];
+    public Vectoid [] vectoidList = new Vectoid[10];
     MouseInput mouse = new MouseInput(this);
 
     public Board(Frame frame){
@@ -39,11 +40,20 @@ public class Board extends JPanel implements Runnable {
         thread.start();
         this.frame.addMouseListener(mouse);
     }
+
+    /**
+     *
+     */
     private void initBoard(){
 
         loadImage();
+        ai = new VectoidAI(map);
         //setPreferredSize(new Dimension(h, w));
     }
+
+    /**
+     *
+     */
     private void loadImage(){
         try{
             background = ImageIO.read(new File("resources/black_bg.jpg"));
@@ -56,6 +66,10 @@ public class Board extends JPanel implements Runnable {
 
     }
 
+    /**
+     *
+     * @param g Instance of Graphics class
+     */
     @Override
     public void paintComponent(Graphics g){
 
@@ -73,11 +87,8 @@ public class Board extends JPanel implements Runnable {
         paintTowerMap(g2);
 
         if(towerClicked){
-
-
             drawRangeOnMovingTower(tower, g2);
             paintTowerClicked(g2);
-
         }
         if (activeWave) {
             paintVectoids(g2);
@@ -87,15 +98,37 @@ public class Board extends JPanel implements Runnable {
 
     }
 
+    /**
+     *
+     */
     public void run() {
         initBoard();
         System.out.println("im running");
-        while(true)
+        while(true) {
             repaint();
-        //update();
+            if(activeWave && frameCount >200000) {
+                update();
+                frameCount = 0;
+            }
+            frameCount++;
+        }
+
 
     }
 
+    private void update(){
+        for (Vectoid v : vectoidList) {
+            if(v != null)
+                ai.CalculateMove(v);
+        }
+    }
+    /**
+     *
+     * @param imageToScale BufferedImage you want to scale
+     * @param dWidth Target widht desired
+     * @param dHeight Target height desired
+     * @return Image Scaled
+     */
     public static BufferedImage scale(BufferedImage imageToScale, int dWidth, int dHeight){
         BufferedImage scaledImage = null;
         if (imageToScale !=null){
@@ -106,7 +139,10 @@ public class Board extends JPanel implements Runnable {
         }
         return scaledImage;
     }
-
+    /**
+     *
+     * @param g2 Instance of Graphics2D class
+     */
     private void paintTowerMap(Graphics2D g2){
 
         for(int x = 0; x < 22; x++){
@@ -126,15 +162,13 @@ public class Board extends JPanel implements Runnable {
                     if(showRanges)
                         drawRange(towerMap[x][y], x, y, g2);
                 }
-
-
-
-
             }
         }
-
     }
-
+    /**
+     *
+     * @param g2 Instance of Graphics2D class
+     */
     private void paintGameMap(Graphics2D g2){
         g2.setColor(Color.lightGray);
 
@@ -147,7 +181,10 @@ public class Board extends JPanel implements Runnable {
             }
         }
     }
-
+    /**
+     *
+     * @param g2 Instance of Graphics2D class
+     */
     private void paintEnemyPath(Graphics2D g2){
         BasicStroke stroke;
         stroke = new BasicStroke(3,2, 2);
@@ -174,7 +211,10 @@ public class Board extends JPanel implements Runnable {
         g2.setStroke(stroke);
 
     }
-
+    /**
+     *
+     * @param g2 Instance of Graphics2D class
+     */
     private void paintBottomMenu(Graphics2D g2){
         g2.setColor(Color.lightGray);
         int xInit = CELL_SIZE;
@@ -183,7 +223,10 @@ public class Board extends JPanel implements Runnable {
 
     }
 
-    //TODO: Bucle para generar los botones que conforman el menu de torres
+    /**
+     *
+     * @param g2 Instance of Graphics2D class
+     */
     private void paintTowerMenu(Graphics2D g2){
         g2.setColor(Color.lightGray);
 
@@ -206,7 +249,10 @@ public class Board extends JPanel implements Runnable {
         g2.setColor(Color.lightGray);
 
     }
-
+    /**
+     *
+     * @param g2 Instance of Graphics2D class
+     */
     private void paintBonusMenu(Graphics2D g2){
         g2.setColor(Color.lightGray);
         int xInit = CELL_SIZE * 36;
@@ -214,7 +260,10 @@ public class Board extends JPanel implements Runnable {
         g2.drawRect( xInit, yInit, CELL_SIZE * 11,CELL_SIZE * 11 );
 
     }
-
+    /**
+     *
+     * @param g2 Instance of Graphics2D class
+     */
     private void paintInfoMenu(Graphics2D g2){
         g2.setColor(Color.lightGray);
         int xInit = CELL_SIZE * 24 ;
@@ -223,6 +272,10 @@ public class Board extends JPanel implements Runnable {
 
     }
 
+    /**
+     *
+     * @param g2 Instance of Graphics2D class
+     */
     private void paintOptionsMenu(Graphics2D g2){
         g2.setColor(Color.lightGray);
 
@@ -246,6 +299,11 @@ public class Board extends JPanel implements Runnable {
 
     }
 
+    /**
+     *
+     * Draws all vectoids present in vectoidList
+     * @param g2 Instance of Graphics2D class
+     */
     private void paintVectoids(Graphics2D g2){
         try{
             vectoidImage = ImageIO.read(new File("resources/Vectoids/BlueVectoid.png"));
@@ -254,9 +312,16 @@ public class Board extends JPanel implements Runnable {
         }
 
         for (Vectoid v : vectoidList) {
-            Point p = v.getCurrentPosition();
-            g2.drawImage(vectoidImage, (p.x + 1) * CELL_SIZE + (vectoidImage.getWidth() / 2), (p.y + 1) * CELL_SIZE + (vectoidImage.getHeight() / 2), null);
-
+            if(v != null){
+                Point p = v.getCurrentPosition();
+                switch (v.getTrajectory()) {
+                    case 'd' -> g2.drawImage(vectoidImage, (p.x + 1) * CELL_SIZE + (vectoidImage.getWidth() / 2), (p.y + 1) * CELL_SIZE + (vectoidImage.getHeight() / 2) + v.getPositionOffset(), null);
+                    case 'r' -> g2.drawImage(vectoidImage, (p.x + 1) * CELL_SIZE + (vectoidImage.getWidth() / 2) + v.getPositionOffset(), (p.y + 1) * CELL_SIZE + (vectoidImage.getHeight() / 2), null);
+                    case 'l' -> g2.drawImage(vectoidImage, (p.x + 1) * CELL_SIZE + (vectoidImage.getWidth() / 2) - v.getPositionOffset(), (p.y + 1) * CELL_SIZE + (vectoidImage.getHeight() / 2), null);
+                    case 'u' -> g2.drawImage(vectoidImage, (p.x + 1) * CELL_SIZE + (vectoidImage.getWidth() / 2), (p.y + 1) * CELL_SIZE + (vectoidImage.getHeight() / 2) - v.getPositionOffset(), null);
+                    default -> System.out.println("Unkown trajectory");
+                }
+            }
         }
     }
 
@@ -303,6 +368,11 @@ public class Board extends JPanel implements Runnable {
 
     }
 
+    /**
+     *
+     * @param x
+     * @param y
+     */
     private void optionsMenuClicked(int x, int y){
         System.out.println("checking location");
         if(x >= (CELL_SIZE * 25) && y >= (CELL_SIZE * 21) && x<= (CELL_SIZE * 30) && y<= (CELL_SIZE * 23)){
@@ -344,20 +414,28 @@ public class Board extends JPanel implements Runnable {
 
     }
 
+    /**
+     *
+     */
     public void newWave() {
 
         Wave w = new Wave(this);
         w.setSpawnPoint(getSpawnPoints());
-        vectoidList = new Vectoid[2];
-        w.startWave(2);
+        vectoidList = new Vectoid[10];
+        w.startWave(3);
 
         activeWave = true;
 
     }
 
+    /**
+     *
+     * @return
+     */
+
     public Point[] getSpawnPoints(){
         Point s;
-        Point[] spawnPoints = new Point[2];
+        Point[] spawnPoints = new Point[5];
         int i = 0;
         for(int x = 0; x < 22; x++) {
             for (int y = 0; y < 18; y++) {
@@ -371,6 +449,11 @@ public class Board extends JPanel implements Runnable {
         }
         return spawnPoints;
     }
+
+    /**
+     *
+     * @param g2
+     */
 
     private void paintTowerClicked(Graphics2D g2){
         Point mouseLocation = MouseInfo.getPointerInfo().getLocation();
@@ -418,6 +501,14 @@ public class Board extends JPanel implements Runnable {
 
     }
 
+    /**
+     *
+     * @param t
+     * @param x
+     * @param y
+     * @param g2
+     */
+
     public void drawRange(Tower t, int x, int y, Graphics2D g2) {
 
         int range =  t.getRange();
@@ -428,6 +519,12 @@ public class Board extends JPanel implements Runnable {
 
 
     }
+
+    /**
+     *
+     * @param t
+     * @param g2
+     */
 
     public void drawRangeOnMovingTower(Tower t, Graphics2D g2){
         int x = MouseInfo.getPointerInfo().getLocation().x;
