@@ -17,7 +17,7 @@ public class Board extends JPanel implements Runnable {
     private VectoidAI ai;
     private int frameCount = 0, waitTime = 0, hp;
     boolean showRanges =  true, waveSpawnig = false, activeWave = false, towerClicked;
-    Tower tower;
+    Tower tower, towerSelected;
     Thread thread = new Thread(this);
     static GraphicsDevice device = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice();
     int h = device.getDisplayMode().getHeight();
@@ -27,6 +27,7 @@ public class Board extends JPanel implements Runnable {
     private BufferedImage background, vectoidImage;
     private final int CELL_SIZE=53;
     private Frame frame;
+    Tower[][] towerMap= new Tower[22][18];
     public ArrayList<Vectoid> vectoidList = new ArrayList<Vectoid>(1);
     MouseInput mouse = new MouseInput(this);
     Wave wave;
@@ -293,17 +294,6 @@ public class Board extends JPanel implements Runnable {
         int yInit = CELL_SIZE;
         g2.drawRect( xInit, yInit, CELL_SIZE * 11,CELL_SIZE * 11 );
 
-    }
-    /**
-     *
-     * @param g2 Instance of Graphics2D class
-     */
-    private void paintInfoMenu(Graphics2D g2){
-        g2.setColor(Color.lightGray);
-        int xInit = CELL_SIZE * 24 ;
-        int yInit = CELL_SIZE * 13;
-        g2.drawRect( xInit, yInit, CELL_SIZE * 23,CELL_SIZE * 6 );
-
         //Paint current money
         g2.setFont(new Font("Times New Roman", Font.PLAIN, 25));
         g2.drawString("Current money: "+money+"€", xInit + CELL_SIZE, yInit + CELL_SIZE);
@@ -319,6 +309,36 @@ public class Board extends JPanel implements Runnable {
         //Paint last Error Message
         g2.setFont(new Font("Times New Roman", Font.PLAIN, 25));
         g2.drawString(lastErrorMessage, xInit + CELL_SIZE, yInit + CELL_SIZE *4);
+
+        g2.drawLine(xInit, yInit + CELL_SIZE * 5, xInit + CELL_SIZE * 11, yInit + CELL_SIZE * 5);
+
+        if(tower != null){
+            g2.drawString("Tower: "+ towerSelected.getTowerType(), xInit + CELL_SIZE, yInit + CELL_SIZE *6);
+            g2.drawString("Range: " + towerSelected.getRange()/CELL_SIZE, xInit + CELL_SIZE, yInit + CELL_SIZE * 7);
+            g2.drawString("Damage: "+ towerSelected.getDamage(), xInit + CELL_SIZE, yInit + CELL_SIZE *8);
+            g2.drawString("Cost: "+ towerSelected.getCost(), xInit + CELL_SIZE, yInit + CELL_SIZE *9);
+
+
+        }
+
+    }
+    /**
+     *
+     * @param g2 Instance of Graphics2D class
+     */
+    private void paintInfoMenu(Graphics2D g2){
+        g2.setColor(Color.lightGray);
+        int xInit = CELL_SIZE * 24 ;
+        int yInit = CELL_SIZE * 13;
+        g2.drawRect( xInit, yInit, CELL_SIZE * 23,CELL_SIZE * 6 );
+
+
+
+        //Paint tower Description
+        g2.setFont(new Font("Times New Roman", Font.PLAIN, 25));
+        if(tower!=null)
+            g2.drawString(towerSelected.getDescription(), xInit + CELL_SIZE, yInit + CELL_SIZE *2);
+
 
     }
 
@@ -425,7 +445,10 @@ public class Board extends JPanel implements Runnable {
                 }
                 towerClicked = false;
             }else{
-                System.out.println("gotta work this function still");
+               int posX = x / CELL_SIZE;
+               int posY = y / CELL_SIZE;
+               if(towerMap[posX][posY] != null)
+                   towerSelected = towerMap[posX][posY];
                 //TODO: check if there's a tower in this position and call the appropiate function
             }
         }
@@ -458,21 +481,25 @@ public class Board extends JPanel implements Runnable {
         if(x >= (CELL_SIZE * 25) && y >= (CELL_SIZE * 2) && x<= (CELL_SIZE * 26) && y<= (CELL_SIZE * 3))
         {
             tower = new BlueTower();
+            towerSelected = new BlueTower();
             towerClicked = true;
         }
         else if(x >= (CELL_SIZE * 27) && y >= (CELL_SIZE * 2) && x<= (CELL_SIZE * 28) && y<= (CELL_SIZE * 3))
         {
             tower = new GreenTower();
+            towerSelected = new GreenTower();
             towerClicked = true;
         }
         else if(x >= (CELL_SIZE * 29) && y >= (CELL_SIZE * 2) && x<= (CELL_SIZE * 30) && y<= (CELL_SIZE * 3))
         {
             tower = new PurpleTower();
+            towerSelected = new PurpleTower();
             towerClicked = true;
         }
         else if(x >= (CELL_SIZE * 31) && y >= (CELL_SIZE * 2) && x<= (CELL_SIZE * 32) && y<= (CELL_SIZE * 3))
         {
             tower = new RedTower();
+            towerSelected = new RedTower();
             towerClicked = true;
         }
 
@@ -561,6 +588,7 @@ public class Board extends JPanel implements Runnable {
         }else{
             tower.setPosition(new Point(posX, posY));
             towerList.add(tower);
+            towerMap[posX][posY] = tower;
         }
 
 
