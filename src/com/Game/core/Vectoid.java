@@ -2,7 +2,7 @@ package com.Game.core;
 import java.awt.*;
 
 public class Vectoid {
-    private int id, damage, hp, ms, positionOffset;
+    private int id, damage, hp, ms, positionOffset, maxHp;
     String vectoidType;
     Point currentPosition, prevPosition;
     char  trajectory;
@@ -14,6 +14,7 @@ public class Vectoid {
         this.ms = ms;
         this.vectoidType = vectoidType;
         this.positionOffset = po;
+        this.maxHp = hp;
 
 
         
@@ -90,5 +91,9 @@ public class Vectoid {
 
     public void setTrajectory(char trajectory) {
         this.trajectory = trajectory;
+    }
+
+    public double getHpPercent(){
+        return (double) hp/maxHp;
     }
 }

@@ -17,7 +17,7 @@ public class VectoidAI {
         if(map.getPosition(vectoidPosition.x + 1, vectoidPosition.y) == 1 && map.getPosition(vectoidPosition.x - 1, vectoidPosition.y) == 1){
             if(map.getPosition(vectoidPosition.x, vectoidPosition.y  - 1) == 1 ){
                 if(v.getPrevPosition().y == vectoidPosition.y  - 1){
-                    //System.out.println("should not go up");
+
                     if(flip){
                         MoveRight(v, vectoidPosition);
                         flip = !flip;

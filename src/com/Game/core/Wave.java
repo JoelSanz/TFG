@@ -2,6 +2,8 @@ package com.Game.core;
 
 import com.Game.Vectoids.BlueVectoid;
 import java.awt.*;
+import java.util.ArrayList;
+import java.util.List;
 
 public class Wave {
     private int vectoidsThisWave;
@@ -9,7 +11,8 @@ public class Wave {
     private boolean isSpawning;
     Board board;
     Vectoid v;
-    Point[] spawnPoint;
+    ArrayList<Point> spawnPoint;
+    ArrayList<Vectoid> vectoidList;
 
     public Wave(Board b){
         this.board = b;
@@ -19,28 +22,28 @@ public class Wave {
         spawned = 0;
         isSpawning = true;
         vectoidsThisWave = vtw;
-        spawnVectoid();
-    }
-    public void spawnVectoid(){
-        int i = 0;
-        int j = 0;
-        while(spawned < vectoidsThisWave){
 
-            v = new BlueVectoid(1, 1, 100, 1, "blue", 0);
-            v.setCurrentPosition(spawnPoint[i]);
-            v.setPrevPosition(spawnPoint[i]);
-            //this could be done with a set function
-            board.vectoidList[j] = v;
-            spawned++;
-            if(spawnPoint[i + 1] != null)
-                i++;
-            j++;
-        }
     }
-    public void setSpawnPoint(Point[] p) {
+
+    public void spawnVectoid(ArrayList<Vectoid> vl, Point sp){
+        v = new BlueVectoid();
+        v.setCurrentPosition(sp);
+        v.setPrevPosition(sp);
+        vl.add(v);
+        spawned++;
+
+    }
+
+    public void setSpawnPoint(ArrayList<Point> p) {
         spawnPoint = p;
 
     }
 
+    public boolean doneSpawning(){
+        if(spawned >= vectoidsThisWave)
+            return true;
+        else
+            return false;
+    }
 
 }

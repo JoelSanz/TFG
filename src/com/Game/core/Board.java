@@ -9,30 +9,29 @@ import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 
 //import java.nio.Buffer;
 
 public class Board extends JPanel implements Runnable {
     private VectoidAI ai;
-    boolean tested = false;
-    private int frameCount = 0;
-    boolean showRanges =  true;
+    private int frameCount = 0, waitTime = 0, hp;
+    boolean showRanges =  true, waveSpawnig = false, activeWave = false, towerClicked;
     Tower tower;
-    boolean activeWave;
-    boolean towerClicked;
     Thread thread = new Thread(this);
-    JButton templateButton = new JButton();
     static GraphicsDevice device = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice();
     int h = device.getDisplayMode().getHeight();
     int w = device.getDisplayMode().getWidth();
     Map map = new Map();
-    private Tower[][] towerMap = new Tower[22][18];
-    private BufferedImage background;
-    private BufferedImage vectoidImage;
+    private ArrayList<Tower> towerList = new ArrayList<Tower>(1);
+    private BufferedImage background, vectoidImage;
     private final int CELL_SIZE=53;
     private Frame frame;
-    public Vectoid [] vectoidList = new Vectoid[10];
+    public ArrayList<Vectoid> vectoidList = new ArrayList<Vectoid>(1);
     MouseInput mouse = new MouseInput(this);
+    Wave wave;
+    double money;
+    String lastErrorMessage = "Game Start";
 
     public Board(Frame frame){
         this.frame = frame;
@@ -48,6 +47,8 @@ public class Board extends JPanel implements Runnable {
 
         loadImage();
         ai = new VectoidAI(map);
+        money = 200;
+        hp = 5;
         //setPreferredSize(new Dimension(h, w));
     }
 
@@ -85,6 +86,7 @@ public class Board extends JPanel implements Runnable {
         paintInfoMenu(g2);
         paintOptionsMenu(g2);
         paintTowerMap(g2);
+        drawLaser(g2);
 
         if(towerClicked){
             drawRangeOnMovingTower(tower, g2);
@@ -103,23 +105,54 @@ public class Board extends JPanel implements Runnable {
      */
     public void run() {
         initBoard();
-        System.out.println("im running");
+
         while(true) {
             repaint();
-            if(activeWave && frameCount >200000) {
+            if(waveSpawnig && waitTime > 20000000 && !wave.doneSpawning()){
+                spawnVectoids();
+                waitTime = 0;
+            }
+            if(frameCount > 400000) {
+
                 update();
                 frameCount = 0;
             }
             frameCount++;
+            waitTime++;
         }
 
 
     }
 
+    /**
+     *
+     */
     private void update(){
-        for (Vectoid v : vectoidList) {
-            if(v != null)
+
+        for (int i = 0; i < vectoidList.size(); i++) {
+            Vectoid v = vectoidList.get(i);
+            if(v != null) {
                 ai.CalculateMove(v);
+                for (Tower t : towerList) {
+                    if (t != null) {
+                        if (t.targets.contains(v)) {
+                            if (!isInRange(t, v)) {
+                                t.targets.remove(v);
+                                t.currentTargets--;
+                            }else{
+                                calculateDamage(t, v);
+                            }
+
+                        } else {
+                            if (isInRange(t, v) && !t.IsTargetFull()) {
+                                t.targets.add(v);
+                                t.currentTargets++;
+                            }
+                        }
+
+                    }
+                }
+            }
         }
     }
     /**
@@ -145,24 +178,25 @@ public class Board extends JPanel implements Runnable {
      */
     private void paintTowerMap(Graphics2D g2){
 
-        for(int x = 0; x < 22; x++){
-            for (int y = 0; y < 18; y++){
-                if(towerMap[x][y] != null){
+        for(Tower t : towerList){
 
-                    switch (towerMap[x][y].getId()) {
-                        case 0 -> g2.setColor(Color.blue);
-                        case 1 -> g2.setColor(Color.green);
-                        case 2 -> g2.setColor(Color.magenta);
-                        case 3 -> g2.setColor(Color.red);
-                        default -> System.out.println("este id no existe");
+                if(t != null){
+
+                    switch (t.getTowerType()) {
+                        case "blue" -> g2.setColor(new Color(0, 0, 255, 255));
+                        case "red" -> g2.setColor(new Color(255, 0, 0, 255));
+                        case "green" -> g2.setColor(new Color(0, 255, 0, 255));
+                        case "purple" -> g2.setColor(new Color(106, 13, 173, 255));
+                        default -> System.out.println("Unkown tower type");
                     }
 
 
-                    g2.drawRect(CELL_SIZE + (x * CELL_SIZE), (CELL_SIZE) + (y* CELL_SIZE), CELL_SIZE, CELL_SIZE);
+                    g2.drawRect((t.getPosition().x * CELL_SIZE), (t.getPosition().y* CELL_SIZE), CELL_SIZE, CELL_SIZE);
                     if(showRanges)
-                        drawRange(towerMap[x][y], x, y, g2);
+                        drawRange(t, t.getPosition().x, t.getPosition().y, g2);
+
                 }
-            }
+
         }
     }
     /**
@@ -235,11 +269,11 @@ public class Board extends JPanel implements Runnable {
         g2.drawRect( xInit, yInit, CELL_SIZE * 11,CELL_SIZE * 11 );
         for (int i = 0; i <= 3; i++){
             switch (i) {
-                case 0 -> g2.setColor(Color.blue);
-                case 1 -> g2.setColor(Color.green);
-                case 2 -> g2.setColor(Color.MAGENTA);
-                case 3 -> g2.setColor(Color.RED);
-                default -> System.out.println("este id no existe");
+                case 0 -> g2.setColor(new Color(0, 0, 255, 255));
+                case 1 -> g2.setColor(new Color(0, 255, 0, 255));
+                case 2 -> g2.setColor(new Color(106, 13, 173, 255));
+                case 3 -> g2.setColor(new Color(255, 0, 0, 255));
+                default -> System.out.println("Unkown tower type");
             }
 
             g2.drawRect( xInit + CELL_SIZE, yInit + CELL_SIZE, CELL_SIZE,CELL_SIZE);
@@ -269,6 +303,22 @@ public class Board extends JPanel implements Runnable {
         int xInit = CELL_SIZE * 24 ;
         int yInit = CELL_SIZE * 13;
         g2.drawRect( xInit, yInit, CELL_SIZE * 23,CELL_SIZE * 6 );
+
+        //Paint current money
+        g2.setFont(new Font("Times New Roman", Font.PLAIN, 25));
+        g2.drawString("Current money: "+money+"€", xInit + CELL_SIZE, yInit + CELL_SIZE);
+
+        //Paint current hp
+        g2.setFont(new Font("Times New Roman", Font.PLAIN, 25));
+        g2.drawString("Current HP: "+hp, xInit + CELL_SIZE, yInit + CELL_SIZE *2);
+
+        //Paint interest rate
+        g2.setFont(new Font("Times New Roman", Font.PLAIN, 25));
+        g2.drawString("Current interest rate: "+ 0, xInit + CELL_SIZE, yInit + CELL_SIZE *3);
+
+        //Paint last Error Message
+        g2.setFont(new Font("Times New Roman", Font.PLAIN, 25));
+        g2.drawString(lastErrorMessage, xInit + CELL_SIZE, yInit + CELL_SIZE *4);
 
     }
 
@@ -314,13 +364,22 @@ public class Board extends JPanel implements Runnable {
         for (Vectoid v : vectoidList) {
             if(v != null){
                 Point p = v.getCurrentPosition();
+                int px, py;
+                px = (p.x + 1) * CELL_SIZE + (vectoidImage.getWidth() / 2);
+                py = (p.y + 1) * CELL_SIZE + (vectoidImage.getHeight() / 2);
                 switch (v.getTrajectory()) {
-                    case 'd' -> g2.drawImage(vectoidImage, (p.x + 1) * CELL_SIZE + (vectoidImage.getWidth() / 2), (p.y + 1) * CELL_SIZE + (vectoidImage.getHeight() / 2) + v.getPositionOffset(), null);
-                    case 'r' -> g2.drawImage(vectoidImage, (p.x + 1) * CELL_SIZE + (vectoidImage.getWidth() / 2) + v.getPositionOffset(), (p.y + 1) * CELL_SIZE + (vectoidImage.getHeight() / 2), null);
-                    case 'l' -> g2.drawImage(vectoidImage, (p.x + 1) * CELL_SIZE + (vectoidImage.getWidth() / 2) - v.getPositionOffset(), (p.y + 1) * CELL_SIZE + (vectoidImage.getHeight() / 2), null);
-                    case 'u' -> g2.drawImage(vectoidImage, (p.x + 1) * CELL_SIZE + (vectoidImage.getWidth() / 2), (p.y + 1) * CELL_SIZE + (vectoidImage.getHeight() / 2) - v.getPositionOffset(), null);
+                    case 'd' -> py = (p.y + 1) * CELL_SIZE + (vectoidImage.getHeight() / 2) + v.getPositionOffset();
+                    case 'r' -> px = (p.x + 1) * CELL_SIZE + (vectoidImage.getWidth() / 2) + v.getPositionOffset();
+                    case 'l' -> px =  (p.x + 1) * CELL_SIZE + (vectoidImage.getWidth() / 2) - v.getPositionOffset();
+                    case 'u' -> py = (p.y + 1) * CELL_SIZE + (vectoidImage.getHeight() / 2) - v.getPositionOffset();
                     default -> System.out.println("Unkown trajectory");
                 }
+                g2.drawImage(vectoidImage, px, py, null);
+                g2.setColor(Color.red);
+                g2.fillRect(px, py - 10, vectoidImage.getWidth(), 5);
+                g2.setColor(Color.green);
+                g2.fillRect(px, py - 10, (int) (vectoidImage.getWidth() * v.getHpPercent()), 5);
+
             }
         }
     }
@@ -354,11 +413,16 @@ public class Board extends JPanel implements Runnable {
             optionsMenuClicked(x, y);
 
         }
-
         //Checks if the click was made in the game map
         else if(x >= CELL_SIZE && y >= CELL_SIZE && x<= CELL_SIZE * 24 && y <= CELL_SIZE * 19){
             if(this.towerClicked){
-                placeTower(x, y);
+                if(money>=tower.getCost()) {
+                    money = money - tower.getCost();
+                    placeTower(x, y);
+                }
+                else{
+                    lastErrorMessage = "you broke ass bitch, you got no monaaaaay";
+                }
                 towerClicked = false;
             }else{
                 System.out.println("gotta work this function still");
@@ -393,22 +457,22 @@ public class Board extends JPanel implements Runnable {
 
         if(x >= (CELL_SIZE * 25) && y >= (CELL_SIZE * 2) && x<= (CELL_SIZE * 26) && y<= (CELL_SIZE * 3))
         {
-            tower = new BlueTower(0, 500, 5, 5, "blue");
+            tower = new BlueTower();
             towerClicked = true;
         }
         else if(x >= (CELL_SIZE * 27) && y >= (CELL_SIZE * 2) && x<= (CELL_SIZE * 28) && y<= (CELL_SIZE * 3))
         {
-            tower = new GreenTower(1, 200, 5, 5, "green");
+            tower = new GreenTower();
             towerClicked = true;
         }
         else if(x >= (CELL_SIZE * 29) && y >= (CELL_SIZE * 2) && x<= (CELL_SIZE * 30) && y<= (CELL_SIZE * 3))
         {
-            tower = new PurpleTower(2, 250, 5, 5, "purple");
+            tower = new PurpleTower();
             towerClicked = true;
         }
         else if(x >= (CELL_SIZE * 31) && y >= (CELL_SIZE * 2) && x<= (CELL_SIZE * 32) && y<= (CELL_SIZE * 3))
         {
-            tower = new RedTower(3, 300, 5, 5, "red");
+            tower = new RedTower();
             towerClicked = true;
         }
 
@@ -419,12 +483,12 @@ public class Board extends JPanel implements Runnable {
      */
     public void newWave() {
 
-        Wave w = new Wave(this);
-        w.setSpawnPoint(getSpawnPoints());
-        vectoidList = new Vectoid[10];
-        w.startWave(3);
-
+        wave = new Wave(this);
+        wave.setSpawnPoint(getSpawnPoints());
+        wave.startWave(20);
+        //spawnVectoids();
         activeWave = true;
+        waveSpawnig = true;
 
     }
 
@@ -433,15 +497,15 @@ public class Board extends JPanel implements Runnable {
      * @return
      */
 
-    public Point[] getSpawnPoints(){
+    public ArrayList<Point> getSpawnPoints(){
         Point s;
-        Point[] spawnPoints = new Point[5];
+        ArrayList<Point> spawnPoints = new ArrayList<Point>(1);
         int i = 0;
         for(int x = 0; x < 22; x++) {
             for (int y = 0; y < 18; y++) {
                 if (map.getPosition(x, y) == 2) {
                     s = new Point(x, y);
-                    spawnPoints[i] = s;
+                    spawnPoints.add(s);
                     i++;
                 }
 
@@ -471,7 +535,7 @@ public class Board extends JPanel implements Runnable {
                 g2.drawRect(mouseLocation.x - (CELL_SIZE / 2), mouseLocation.y - (CELL_SIZE / 2), CELL_SIZE, CELL_SIZE);
             }
             case "purple" -> {
-                g2.setColor(Color.magenta);
+                g2.setColor(new Color(106, 13, 173));
                 g2.drawRect(mouseLocation.x - (CELL_SIZE / 2), mouseLocation.y - (CELL_SIZE / 2), CELL_SIZE, CELL_SIZE);
             }
             case "green" -> {
@@ -495,7 +559,8 @@ public class Board extends JPanel implements Runnable {
         if(map.getPosition(posX-1, posY-1)!=0) {
             System.out.println("Can't place a tower there");
         }else{
-            towerMap[posX-1][posY-1] = tower;
+            tower.setPosition(new Point(posX, posY));
+            towerList.add(tower);
         }
 
 
@@ -513,8 +578,16 @@ public class Board extends JPanel implements Runnable {
 
         int range =  t.getRange();
         g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-        g2.setColor(new Color(0, 0, 255, 60));
-        g2.fillOval((((x+1)*CELL_SIZE)+CELL_SIZE/2)-range/2, (((y+1)*CELL_SIZE)+CELL_SIZE/2)-range/2, range, range);
+
+        switch (t.getTowerType()) {
+            case "blue" -> g2.setColor(new Color(0, 0, 255, 60));
+            case "red" -> g2.setColor(new Color(255, 0, 0, 60));
+            case "green" -> g2.setColor(new Color(0, 255, 0, 60));
+            case "purple" -> g2.setColor(new Color(106, 13, 173, 60));
+            default -> System.out.println("Unkown tower type");
+        }
+        g2.fillOval((((x)*CELL_SIZE)+CELL_SIZE/2)-range/2, (((y)*CELL_SIZE)+CELL_SIZE/2)-range/2, range, range);
+
 
 
 
@@ -529,14 +602,112 @@ public class Board extends JPanel implements Runnable {
     public void drawRangeOnMovingTower(Tower t, Graphics2D g2){
         int x = MouseInfo.getPointerInfo().getLocation().x;
         int y = MouseInfo.getPointerInfo().getLocation().y;
-        //Ellipse2D.Double shape = new Ellipse2D.Double(x, y, 500, 500);
-        g2.setColor(Color.blue);
+
+
+
+        switch (t.getTowerType()) {
+            case "blue" -> g2.setColor(new Color(0, 0, 255, 60));
+            case "red" -> g2.setColor(new Color(255, 0, 0, 60));
+            case "green" -> g2.setColor(new Color(0, 255, 0, 60));
+            case "purple" -> g2.setColor(new Color(106, 13, 173, 60));
+            default -> System.out.println("Unkown tower type");
+        }
         g2.drawOval(x-(t.getRange()/2), y-(t.getRange()/2), t.getRange(), t.getRange());
-        g2.setColor(new Color(0, 0, 255, 60));
         g2.fillOval(x-(t.getRange()/2), y-(t.getRange()/2), t.getRange(), t.getRange());
 
     }
 
+    /**
+     * Checks if Vectoid v is in range of tower t
+     * @param t
+     * @param v
+     */
+    public boolean isInRange(Tower t, Vectoid v){
+        boolean inRange = false;
+        int vx, vy;
+        Graphics2D g2;
+        vx = 0;
+        vy = 0;
+        if(v != null) {
+            vx = (v.getCurrentPosition().x * CELL_SIZE);
+            vy = (v.getCurrentPosition().y * CELL_SIZE);
+            switch (v.getTrajectory()) {
+                case 'd' -> vy += v.getPositionOffset();
+                case 'r' -> vx += v.getPositionOffset();
+                case 'l' -> vx -= v.getPositionOffset();
+                case 'u' -> vy -= v.getPositionOffset();
+                default -> System.out.println("Unkown trajectory");
+            }
+        }
+
+        //Calculates wether vectoid v is in range of tower t  by the formula (x-centerX)^2+(y-centerY)^2 < radius^2
+        //Where x, y are vx, vy and centerX, centerY are t.getPosition().x or .y. radius is the range of the tower
+
+        if(Math.pow(vx-((t.getPosition().x -1)  * CELL_SIZE), 2) + Math.pow(vy - ((t.getPosition().y -1 )* CELL_SIZE), 2) < Math.pow((t.getRange()/2), 2)) {
+            inRange = true;
+        }
+
+        return inRange;
+    }
+
+    public void calculateDamage(Tower t, Vectoid v) {
+
+        //drawLaser(t, v);
+        v.setHp(v.getHp() - t.getDamage());
+        if (v.getHp() <= 0) {
+            vectoidList.remove(v);
+            t.removeTarget(v);
+            t.currentTargets--;
+            repaint();
+            money +=10;
+
+            }
+
+
+    }
+
+    public void spawnVectoids(){
+        ArrayList<Point> spawnPoints = getSpawnPoints();
+        for(Point p : spawnPoints)
+            wave.spawnVectoid(vectoidList, p);
+
+    }
+
+    public void drawLaser(Graphics2D g2){
+        int vx, vy;
+        ArrayList<Vectoid> targetList;
+        for (Tower t : towerList) {
+            targetList = t.getTargets();
+            for (Vectoid v : targetList) {
+                vx = 0;
+                vy = 0;
+                if (v != null) {
+                    vx = (v.getCurrentPosition().x * CELL_SIZE);
+                    vy = (v.getCurrentPosition().y * CELL_SIZE);
+                    switch (v.getTrajectory()) {
+                        case 'd' -> vy += v.getPositionOffset();
+                        case 'r' -> vx += v.getPositionOffset();
+                        case 'l' -> vx -= v.getPositionOffset();
+                        case 'u' -> vy -= v.getPositionOffset();
+                        default -> System.out.println("Unkown trajectory");
+                    }
+                }
+
+
+                g2.setColor(Color.red);
+
+                g2.drawLine(t.getPosition().x * CELL_SIZE + CELL_SIZE / 2, t.getPosition().y * CELL_SIZE + CELL_SIZE / 2, vx + CELL_SIZE + CELL_SIZE / 2, vy + CELL_SIZE + CELL_SIZE / 2);
+                /*
+                BasicStroke stroke;
+                stroke = new BasicStroke(3, 2, 2);
+                g2.setStroke(stroke);
+                stroke = new BasicStroke(1, 2, 2);
+                g2.setStroke(stroke);
+
+                 */
+            }
+        }
+    }
 }
 
 

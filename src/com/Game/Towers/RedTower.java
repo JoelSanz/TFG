@@ -4,7 +4,7 @@ import com.Game.core.Tower;
 
 public class RedTower extends Tower {
 
-    public RedTower(int id, int range, int damage, int cost, String towerType){
-        super(id, range, damage, cost, towerType);
+    public RedTower(){
+        super(3, 300, 5, 25, "red", 1);
     }
 }

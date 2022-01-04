@@ -4,7 +4,7 @@ import com.Game.core.Vectoid;
 
 public class BlueVectoid extends Vectoid {
 
-    public BlueVectoid(int id, int damage, int hp, int ms, String vectoidType, int po) {
-        super(id, damage, hp, ms, vectoidType, po);
+    public BlueVectoid() {
+        super(1, 1, 1000, 5, "blue", 0);
     }
 }
