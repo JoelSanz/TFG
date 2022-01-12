@@ -1,0 +1,20 @@
+<component name="libraryTable">
+  <library name="jfree.chart3d.fx" type="repository">
+    <properties maven-id="org.jfree:org.jfree.chart3d.fx:2.0" />
+    <CLASSES>
+      <root url="jar://$MAVEN_REPOSITORY$/org/jfree/org.jfree.chart3d.fx/2.0/org.jfree.chart3d.fx-2.0.jar!/" />
+      <root url="jar://$MAVEN_REPOSITORY$/org/jfree/org.jfree.chart3d/2.0/org.jfree.chart3d-2.0.jar!/" />
+      <root url="jar://$MAVEN_REPOSITORY$/org/openjfx/javafx-controls/13.0.2/javafx-controls-13.0.2.jar!/" />
+      <root url="jar://$MAVEN_REPOSITORY$/org/openjfx/javafx-controls/13.0.2/javafx-controls-13.0.2-win.jar!/" />
+      <root url="jar://$MAVEN_REPOSITORY$/org/openjfx/javafx-graphics/13.0.2/javafx-graphics-13.0.2.jar!/" />
+      <root url="jar://$MAVEN_REPOSITORY$/org/openjfx/javafx-graphics/13.0.2/javafx-graphics-13.0.2-win.jar!/" />
+      <root url="jar://$MAVEN_REPOSITORY$/org/jfree/org.jfree.fxgraphics2d/2.0/org.jfree.fxgraphics2d-2.0.jar!/" />
+      <root url="jar://$MAVEN_REPOSITORY$/org/openjfx/javafx-base/13.0.2/javafx-base-13.0.2.jar!/" />
+      <root url="jar://$MAVEN_REPOSITORY$/org/openjfx/javafx-base/13.0.2/javafx-base-13.0.2-win.jar!/" />
+      <root url="jar://$MAVEN_REPOSITORY$/org/openjfx/javafx-swing/13.0.2/javafx-swing-13.0.2.jar!/" />
+      <root url="jar://$MAVEN_REPOSITORY$/org/openjfx/javafx-swing/13.0.2/javafx-swing-13.0.2-win.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

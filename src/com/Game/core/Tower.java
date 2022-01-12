@@ -4,6 +4,8 @@ import java.awt.*;
 import java.util.ArrayList;
 
 public class Tower {
+
+    DPSChart dpsChart;
     private int id, range, damage, cost;
     private String towerType;
     Point position;
@@ -49,6 +51,10 @@ public class Tower {
         this.description = d;
     }
 
+    public void setDpsChart(DPSChart dpsChart) {
+        this.dpsChart = dpsChart;
+    }
+
     public int getCost() {
         return cost;
     }
@@ -80,6 +86,10 @@ public class Tower {
 
     public String getDescription(){
         return description;
+    }
+
+    public DPSChart getDpsChart() {
+        return dpsChart;
     }
 
     public boolean IsTargetFull(){

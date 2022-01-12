@@ -15,7 +15,7 @@ import java.util.ArrayList;
 
 public class Board extends JPanel implements Runnable {
     private VectoidAI ai;
-    private int frameCount = 0, waitTime = 0, hp;
+    private int frameCount = 0, waitTime = 0, hp, interestCost = 100;
     boolean showRanges =  true, waveSpawnig = false, activeWave = false, towerClicked;
     Tower tower, towerSelected;
     Thread thread = new Thread(this);
@@ -33,10 +33,15 @@ public class Board extends JPanel implements Runnable {
     Wave wave;
     double money;
     String lastErrorMessage = "Game Start";
+    double interestRate = 0.0;
+    DPSChart dpsMeter;
 
     public Board(Frame frame){
         this.frame = frame;
-        //Component textArea = new TextArea("Click here");
+        this.setLayout(null);
+        this.dpsMeter = new DPSChart("Damage this Round", CELL_SIZE);
+        this.add(dpsMeter.getPane());
+        //this.remove(dpsMeter.getPane());
         thread.start();
         this.frame.addMouseListener(mouse);
     }
@@ -82,7 +87,7 @@ public class Board extends JPanel implements Runnable {
         paintGameMap(g2);
         paintEnemyPath(g2);
         paintTowerMenu(g2);
-        paintBottomMenu(g2);
+        paintChartMenu(g2);
         paintBonusMenu(g2);
         paintInfoMenu(g2);
         paintOptionsMenu(g2);
@@ -142,6 +147,12 @@ public class Board extends JPanel implements Runnable {
                                 t.currentTargets--;
                             }else{
                                 calculateDamage(t, v);
+                                if (v.getHp() <= 0) {
+                                    DeleteVectoid(v);
+                                    repaint();
+                                    money += 10 + (10 * interestRate);
+                                    break;
+                                }
                             }
 
                         } else {
@@ -228,17 +239,26 @@ public class Board extends JPanel implements Runnable {
                 if(map.getPosition(x, y) != 0) {
                     if (map.getPosition(x, y) == 1) {
 
+                        g2.setColor(new Color(255, 255, 255, 80));
+                        g2.fillRect(CELL_SIZE + (x * CELL_SIZE), (CELL_SIZE) + (y* CELL_SIZE), CELL_SIZE, CELL_SIZE);
                         g2.setColor(Color.white);
                         g2.setStroke(stroke);
                     } else if (map.getPosition(x, y) == 2) {
+
+                        g2.setColor(new Color(255, 255, 0, 80));
+                        g2.fillRect(CELL_SIZE + (x * CELL_SIZE), (CELL_SIZE) + (y* CELL_SIZE), CELL_SIZE, CELL_SIZE);
                         g2.setColor(Color.yellow);
                         g2.setStroke(stroke);
                     } else if (map.getPosition(x, y) == 3) {
-                        g2.setColor(Color.black);
+
+                        g2.setColor(new Color(255, 0, 0, 80));
+                        g2.fillRect(CELL_SIZE + (x * CELL_SIZE), (CELL_SIZE) + (y* CELL_SIZE), CELL_SIZE, CELL_SIZE);
+                        g2.setColor(Color.red);
                         g2.setStroke(stroke);
 
                     }
                     g2.drawRect(CELL_SIZE + (x * CELL_SIZE), (CELL_SIZE) + (y* CELL_SIZE), CELL_SIZE, CELL_SIZE);
+
                 }
             }
         }
@@ -250,7 +270,7 @@ public class Board extends JPanel implements Runnable {
      *
      * @param g2 Instance of Graphics2D class
      */
-    private void paintBottomMenu(Graphics2D g2){
+    private void paintChartMenu(Graphics2D g2){
         g2.setColor(Color.lightGray);
         int xInit = CELL_SIZE;
         int yInit = CELL_SIZE * 20;
@@ -281,7 +301,16 @@ public class Board extends JPanel implements Runnable {
             xInit = xInit + CELL_SIZE*2;
 
         }
+
+        xInit = CELL_SIZE * 24 ;
+        yInit = CELL_SIZE;
         g2.setColor(Color.lightGray);
+        g2.drawLine(xInit, yInit + (CELL_SIZE * 3), xInit +(CELL_SIZE * 11), yInit + (CELL_SIZE * 3));
+
+        //Draw interest rate Bonus
+        g2.setColor(Color.yellow);
+        g2.drawRect(xInit + CELL_SIZE, yInit + (CELL_SIZE * 4), CELL_SIZE, CELL_SIZE);
+
 
     }
     /**
@@ -304,7 +333,7 @@ public class Board extends JPanel implements Runnable {
 
         //Paint interest rate
         g2.setFont(new Font("Times New Roman", Font.PLAIN, 25));
-        g2.drawString("Current interest rate: "+ 0, xInit + CELL_SIZE, yInit + CELL_SIZE *3);
+        g2.drawString("Current interest rate: "+ (float)interestRate, xInit + CELL_SIZE, yInit + CELL_SIZE *3);
 
         //Paint last Error Message
         g2.setFont(new Font("Times New Roman", Font.PLAIN, 25));
@@ -437,8 +466,8 @@ public class Board extends JPanel implements Runnable {
         else if(x >= CELL_SIZE && y >= CELL_SIZE && x<= CELL_SIZE * 24 && y <= CELL_SIZE * 19){
             if(this.towerClicked){
                 if(money>=tower.getCost()) {
-                    money = money - tower.getCost();
-                    placeTower(x, y);
+                    if(placeTower(x, y))
+                        money = money - tower.getCost();
                 }
                 else{
                     lastErrorMessage = "you broke ass bitch, you got no monaaaaay";
@@ -447,8 +476,12 @@ public class Board extends JPanel implements Runnable {
             }else{
                int posX = x / CELL_SIZE;
                int posY = y / CELL_SIZE;
-               if(towerMap[posX][posY] != null)
+               if(towerMap[posX][posY] != null) {
                    towerSelected = towerMap[posX][posY];
+                   DrawTowerChart(towerSelected);
+               }else{
+                   DrawGameChart();
+               }
                 //TODO: check if there's a tower in this position and call the appropiate function
             }
         }
@@ -468,6 +501,7 @@ public class Board extends JPanel implements Runnable {
 
         if(x >= (CELL_SIZE * 31) && y >= (CELL_SIZE * 21) && x<= (CELL_SIZE * 36) && y<= (CELL_SIZE * 23)){
             showRanges = !showRanges;
+
         }
     }
     /**
@@ -501,6 +535,13 @@ public class Board extends JPanel implements Runnable {
             tower = new RedTower();
             towerSelected = new RedTower();
             towerClicked = true;
+        }else if(x >= (CELL_SIZE * 25) && y >= (CELL_SIZE * 5) && x<= (CELL_SIZE * 26) && y<= (CELL_SIZE * 6)){
+
+            if(money>=interestCost) {
+                money = money - interestCost;
+                IncBonusRate();
+            }else
+                lastErrorMessage = "You are broke";
         }
 
     }
@@ -579,19 +620,25 @@ public class Board extends JPanel implements Runnable {
      * @param x An integer containing the x coordinate on screen of the mouse click
      * @param y An integer containing the y coordinate on screen of the mouse click
      */
-    private void placeTower(int x, int y){
+    private boolean placeTower(int x, int y){
 
+        boolean placed = false;
         int posX = x / CELL_SIZE;
         int posY = y / CELL_SIZE;
         if(map.getPosition(posX-1, posY-1)!=0) {
-            System.out.println("Can't place a tower there");
+            lastErrorMessage = "Can't place the tower on the path";
+        }else if(towerMap[posX][posY] != null){
+            lastErrorMessage = "There's a tower there already!";
+
         }else{
+            placed = true;
             tower.setPosition(new Point(posX, posY));
             towerList.add(tower);
             towerMap[posX][posY] = tower;
+            tower.setDpsChart(new DPSChart("Tower damage",CELL_SIZE ));
+            this.add(tower.getDpsChart().getPane());
         }
-
-
+        return placed;
     }
 
     /**
@@ -682,14 +729,8 @@ public class Board extends JPanel implements Runnable {
 
         //drawLaser(t, v);
         v.setHp(v.getHp() - t.getDamage());
-        if (v.getHp() <= 0) {
-            vectoidList.remove(v);
-            t.removeTarget(v);
-            t.currentTargets--;
-            repaint();
-            money +=10;
-
-            }
+        dpsMeter.addData(t.getDamage());
+        t.getDpsChart().addData(t.getDamage());
 
 
     }
@@ -735,6 +776,32 @@ public class Board extends JPanel implements Runnable {
                  */
             }
         }
+    }
+    public void DrawTowerChart(Tower t){
+        dpsMeter.getPane().setVisible(false);
+
+        t.getDpsChart().setVisible(true);
+        t.getDpsChart().getPane().setBounds(CELL_SIZE, CELL_SIZE * 20, CELL_SIZE * 22, CELL_SIZE * 6);
+
+        frame.getContentPane().validate();
+    }
+
+    public void DrawGameChart(){
+        dpsMeter.getPane().setVisible(true);
+    }
+    public void IncBonusRate(){
+        interestRate += 0.1;
+    }
+
+    public void DeleteVectoid(Vectoid v){
+        for(Tower t : towerList){
+            if(t.getTargets().lastIndexOf(v) >= 0){
+                t.removeTarget(v);
+                t.currentTargets--;
+            }
+        }
+        vectoidList.remove(v);
+
     }
 }
 
