@@ -1,6 +1,7 @@
 package com.Game.core;
 
 import java.awt.*;
+import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 
 public class Tower {
@@ -12,10 +13,11 @@ public class Tower {
     int maxTargets;
     ArrayList<Vectoid> targets;
     int currentTargets;
-    private final int CELL_SIZE=53;
     String description;
+    private BufferedImage sprite;
+    int delay, maxDelay;
 
-    public Tower(int id, int range, int damage, int cost, String towerType, int maxTargets){
+    public Tower(int id, int range, int damage, int cost, String towerType, int maxTargets, BufferedImage sprite, int delay){
         this.id = id;
         this.range = range;
         this.damage = damage;
@@ -24,6 +26,9 @@ public class Tower {
         this.maxTargets = maxTargets;
         this.targets = new ArrayList<Vectoid>(maxTargets);
         this.currentTargets = 0;
+        this.sprite = sprite;
+        this.delay = delay;
+        this.maxDelay = delay;
     }
 
     //Getters & Setters
@@ -55,6 +60,10 @@ public class Tower {
         this.dpsChart = dpsChart;
     }
 
+    public void setSprite(BufferedImage sprite) {
+        this.sprite = sprite;
+    }
+
     public int getCost() {
         return cost;
     }
@@ -70,6 +79,10 @@ public class Tower {
     public int getRange() {
 
         return range;
+    }
+
+    public BufferedImage getSprite() {
+        return sprite;
     }
 
     public String getTowerType() {

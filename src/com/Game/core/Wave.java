@@ -1,9 +1,8 @@
 package com.Game.core;
 
-import com.Game.Vectoids.BlueVectoid;
 import java.awt.*;
+import java.awt.image.BufferedImage;
 import java.util.ArrayList;
-import java.util.List;
 
 public class Wave {
     private int vectoidsThisWave;
@@ -25,8 +24,12 @@ public class Wave {
 
     }
 
-    public void spawnVectoid(ArrayList<Vectoid> vl, Point sp){
-        v = new BlueVectoid();
+    public void spawnVectoid(ArrayList<Vectoid> vl, Point sp, int wc, BufferedImage sprite, Vectoid vectoidThisWave){
+        try {
+            v = (Vectoid) vectoidThisWave.clone();
+        } catch (CloneNotSupportedException e) {
+            e.printStackTrace();
+        }
         v.setCurrentPosition(sp);
         v.setPrevPosition(sp);
         vl.add(v);

@@ -2,10 +2,12 @@ package com.Game.Towers;
 
 import com.Game.core.Tower;
 
+import java.awt.image.BufferedImage;
+
 public class RedTower extends Tower {
 
-    public RedTower(){
-        super(3, 300, 5, 25, "red", 1);
-        setDescription("no se que va a hacer esta torre aun");
+    public RedTower(int cs, BufferedImage sprite){
+        super(3, 7*cs, 110, 200, "red", 7, sprite, 5);
+        setDescription("Burns enemies for a great amount of damage");
     }
 }

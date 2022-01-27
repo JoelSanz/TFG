@@ -8,7 +8,7 @@ import java.awt.event.MouseListener;
 public class MouseInput implements MouseListener {
 
 
-    int CELL_SIZE = 53;
+
     private Board board;
     public MouseInput(Board b) {
         this.board = b;

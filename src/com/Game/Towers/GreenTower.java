@@ -2,10 +2,12 @@ package com.Game.Towers;
 
 import com.Game.core.Tower;
 
+import java.awt.image.BufferedImage;
+
 public class GreenTower extends Tower {
 
-    public GreenTower(){
-        super(1, 3*53, 5, 20, "green", 2);
-        setDescription("Fires a low damaging that also slows enemies");
+    public GreenTower(int cs, BufferedImage sprite){
+        super(1, 6*cs, 22, 100, "green", 1, sprite, 0);
+        setDescription("Fires laser that constantly damages Vectoids");
     }
 }

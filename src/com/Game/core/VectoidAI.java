@@ -6,10 +6,12 @@ public class VectoidAI {
 
     public Map map;
     boolean flip;
-    public VectoidAI(Map m){
+    public int cellSize;
+    public VectoidAI(Map m, int cs){
 
         this.map = m;
         flip = false;
+        this.cellSize = cs;
     }
 
     public void CalculateMove(Vectoid v){
@@ -64,6 +66,11 @@ public class VectoidAI {
             MoveLeft(v, vectoidPosition);
 
         }
+
+        if(map.getPosition(vectoidPosition.x, vectoidPosition.y + 1) == 3 ){
+            MoveDown(v, vectoidPosition);
+        }
+
     }
 
     /**
@@ -73,8 +80,8 @@ public class VectoidAI {
      */
     private void MoveRight(Vectoid v, Point vectoidPosition){
         v.setTrajectory('r');
-        if(v.getPositionOffset() <= 50)
-            v.setPositionOffset(v.getPositionOffset() + 1);
+        if(v.getPositionOffset() < cellSize)
+            v.setPositionOffset(v.getPositionOffset() + v.getMs());
         else{
             v.setPrevPosition(vectoidPosition);
             v.setCurrentPosition(new Point(vectoidPosition.x + 1, vectoidPosition.y));
@@ -90,8 +97,8 @@ public class VectoidAI {
      */
     private void MoveLeft(Vectoid v, Point vectoidPosition){
         v.setTrajectory('l');
-        if(v.getPositionOffset() <= 50)
-            v.setPositionOffset(v.getPositionOffset() + 1);
+        if(v.getPositionOffset() < cellSize)
+            v.setPositionOffset(v.getPositionOffset() + v.getMs());
         else{
             v.setPrevPosition(vectoidPosition);
             v.setCurrentPosition(new Point(vectoidPosition.x - 1, vectoidPosition.y));
@@ -107,8 +114,8 @@ public class VectoidAI {
      */
     private void MoveUp(Vectoid v, Point vectoidPosition){
         v.setTrajectory('u');
-        if(v.getPositionOffset() <= 50)
-            v.setPositionOffset(v.getPositionOffset() + 1);
+        if(v.getPositionOffset() < cellSize)
+            v.setPositionOffset(v.getPositionOffset() + v.getMs());
         else {
             v.setPrevPosition(vectoidPosition);
             v.setCurrentPosition(new Point(vectoidPosition.x, vectoidPosition.y - 1));
@@ -124,14 +131,21 @@ public class VectoidAI {
      */
     private void MoveDown(Vectoid v, Point vectoidPosition){
         v.setTrajectory('d');
-        if(v.getPositionOffset() <= 50)
-            v.setPositionOffset(v.getPositionOffset() + 1);
+        if(v.getPositionOffset() < cellSize)
+            v.setPositionOffset(v.getPositionOffset() + v.getMs());
         else {
             v.setPrevPosition(vectoidPosition);
             v.setCurrentPosition(new Point(vectoidPosition.x, vectoidPosition.y + 1));
-            v.setPositionOffset(0);
+            v.setPositionOffset(v.getPositionOffset()-cellSize);
         }
 
+    }
+
+    public boolean hasArrived(Vectoid v){
+        if(map.getPosition(v.getCurrentPosition().x, v.getCurrentPosition().y) == 3)
+            return true;
+        else
+            return false;
     }
 }
 

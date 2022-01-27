@@ -1,13 +1,16 @@
 package com.Game.core;
 import java.awt.*;
+import java.awt.image.BufferedImage;
 
-public class Vectoid {
+public class Vectoid implements Cloneable{
     private int id, damage, hp, ms, positionOffset, maxHp;
     String vectoidType;
     Point currentPosition, prevPosition;
     char  trajectory;
+    BufferedImage sprite;
+    boolean arrived;
 
-    public Vectoid(int id, int damage, int hp, int ms, String vectoidType, int po){
+    public Vectoid(int id, int damage, int hp, int ms, String vectoidType, int po, BufferedImage sprite){
         this.id = id;
         this.damage = damage;
         this.hp = hp;
@@ -15,7 +18,8 @@ public class Vectoid {
         this.vectoidType = vectoidType;
         this.positionOffset = po;
         this.maxHp = hp;
-
+        this.sprite = sprite;
+        arrived = false;
 
         
     }
@@ -35,6 +39,14 @@ public class Vectoid {
 
     public int getMs() {
         return ms;
+    }
+
+    public BufferedImage getSprite() {
+        return sprite;
+    }
+
+    public boolean isArrived() {
+        return arrived;
     }
 
     public String getVectoidType() {
@@ -73,6 +85,10 @@ public class Vectoid {
         this.ms = ms;
     }
 
+    public void setArrived(boolean arrived) {
+        this.arrived = arrived;
+    }
+
     public void setVectoidType(String vectoidType) {
         this.vectoidType = vectoidType;
     }
@@ -95,5 +111,10 @@ public class Vectoid {
 
     public double getHpPercent(){
         return (double) hp/maxHp;
+    }
+
+    public Object clone() throws CloneNotSupportedException
+    {
+        return (Vectoid)super.clone();
     }
 }

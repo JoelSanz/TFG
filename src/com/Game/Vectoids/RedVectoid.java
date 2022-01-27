@@ -2,8 +2,12 @@ package com.Game.Vectoids;
 
 import com.Game.core.Vectoid;
 
-public class RedVectoid extends Vectoid {
-    public RedVectoid() {
-        super(1, 1, 500, 1, "red", 0);
+import java.awt.image.BufferedImage;
+
+public class
+RedVectoid extends Vectoid {
+    public RedVectoid(int hp,  BufferedImage sprite) {
+        super(1, 1, hp, 3, "red", 0, sprite);
     }
+
 }

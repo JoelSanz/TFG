@@ -20,7 +20,7 @@ import java.util.Random;
 public class DPSChart extends JPanel {
     JPanel pane;
     ChartPanel chartPanel;
-    int CELL_SIZE;
+    int cellSize;
     private static final Random random = new Random();
     DynamicTimeSeriesCollection dataset;
     float[] damage;
@@ -31,7 +31,7 @@ public class DPSChart extends JPanel {
 
     public DPSChart(String title, int cs) {
 
-        CELL_SIZE = cs;
+        cellSize = cs;
         pane = new JPanel();
         // Create dataset
         //addData(5);
@@ -40,9 +40,9 @@ public class DPSChart extends JPanel {
 
         chart = createChart(title, dataset);
         chartPanel = new ChartPanel(chart);
-        chartPanel.setPreferredSize(new Dimension(CELL_SIZE * 22, CELL_SIZE * 6));
+        chartPanel.setPreferredSize(new Dimension(cellSize * 22, cellSize * 6));
         pane.add(chartPanel);
-        pane.setBounds(CELL_SIZE, CELL_SIZE * 20, CELL_SIZE * 22, CELL_SIZE * 6);
+        pane.setBounds(cellSize, cellSize * 20, cellSize * 22, cellSize * 6);
         timer = new Timer(100, new ActionListener() {
             float[] newData = new float[1];
 
