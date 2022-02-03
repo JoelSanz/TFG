@@ -7,10 +7,13 @@ public class Vectoid implements Cloneable{
     String vectoidType;
     Point currentPosition, prevPosition;
     char  trajectory;
+    boolean flip;
     BufferedImage sprite;
     boolean arrived;
+    boolean slowed;
 
     public Vectoid(int id, int damage, int hp, int ms, String vectoidType, int po, BufferedImage sprite){
+        this.flip = false;
         this.id = id;
         this.damage = damage;
         this.hp = hp;
@@ -69,6 +72,10 @@ public class Vectoid implements Cloneable{
         return trajectory;
     }
 
+    public boolean isSlowed() {
+        return slowed;
+    }
+
     public void setHp(int hp) {
         this.hp = hp;
     }
@@ -91,6 +98,14 @@ public class Vectoid implements Cloneable{
 
     public void setVectoidType(String vectoidType) {
         this.vectoidType = vectoidType;
+    }
+
+    public void setFlip(boolean flip) {
+        this.flip = flip;
+    }
+
+    public void setSlowed(boolean slowed) {
+        this.slowed = slowed;
     }
 
     public void setCurrentPosition(Point currentPosition) {
@@ -116,5 +131,9 @@ public class Vectoid implements Cloneable{
     public Object clone() throws CloneNotSupportedException
     {
         return (Vectoid)super.clone();
+    }
+
+    public boolean hasFlipped(){
+        return this.flip;
     }
 }

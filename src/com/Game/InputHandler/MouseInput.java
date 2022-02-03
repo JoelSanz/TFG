@@ -23,7 +23,15 @@ public class MouseInput implements MouseListener {
 
     @Override
     public void mousePressed(MouseEvent e) {
-        board.checkLocationClicked(e.getX(), e.getY());
+        if(board.isMainMenu())
+            board.checkMainMenuClick(e.getX(), e.getY());
+        else if(board.isCreatingLevel())
+            board.checkCreatingLevelClick(e.getX(), e.getY());
+        else if(board.isSelectingLevel()){
+            System.out.println("selecting level click");
+            board.checkSelectingLevelClick(e.getX(), e.getY());
+        }else
+            board.checkLocationClicked(e.getX(), e.getY());
     }
 
     @Override

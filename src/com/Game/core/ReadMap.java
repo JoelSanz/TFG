@@ -1,7 +1,5 @@
 package com.Game.core;
 
-import com.Game.core.Map;
-
 import java.io.FileInputStream;
 import java.io.InputStreamReader;
 import java.util.Scanner;
@@ -11,8 +9,8 @@ public class ReadMap {
     InputStreamReader reader;
     Scanner scanner;
 
-    public ReadMap(Map map){
-        getMap("Maps/Map2/Map2.level", map);
+    public ReadMap(String filename, Map map){
+        getMap(filename, map);
     }
     public Map getMap(String filename, Map map){
         try{

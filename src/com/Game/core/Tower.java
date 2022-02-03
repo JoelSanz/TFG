@@ -16,6 +16,7 @@ public class Tower {
     String description;
     private BufferedImage sprite;
     int delay, maxDelay;
+    CSVWriterCustom writer;
 
     public Tower(int id, int range, int damage, int cost, String towerType, int maxTargets, BufferedImage sprite, int delay){
         this.id = id;
@@ -64,6 +65,10 @@ public class Tower {
         this.sprite = sprite;
     }
 
+    public void setWriter(CSVWriterCustom writer) {
+        this.writer = writer;
+    }
+
     public int getCost() {
         return cost;
     }
@@ -79,6 +84,10 @@ public class Tower {
     public int getRange() {
 
         return range;
+    }
+
+    public CSVWriterCustom getWriter() {
+        return writer;
     }
 
     public BufferedImage getSprite() {

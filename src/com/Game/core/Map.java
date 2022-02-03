@@ -4,9 +4,9 @@ public class Map {
 
     private int[][] map;
 
-    public Map(){
+    public Map(String filename){
 
-        ReadMap reader = new ReadMap(this);
+        ReadMap reader = new ReadMap(filename, this);
     }
 
     public void setMap(int[][] map) {

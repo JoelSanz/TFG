@@ -1,76 +1,113 @@
 package com.Game.core;
 
 import java.awt.*;
+import java.util.Random;
 
 public class VectoidAI {
 
     public Map map;
-    boolean flip;
+    int flip;
+
     public int cellSize;
+    Random rand;
+    char lastTrajectory;
     public VectoidAI(Map m, int cs){
 
         this.map = m;
-        flip = false;
+        flip = generateRandomNumber();
         this.cellSize = cs;
+        rand = new Random();
+        lastTrajectory = 'r';
     }
 
-    public void CalculateMove(Vectoid v){
+    public boolean CalculateMove(Vectoid v){
         Point vectoidPosition = v.getCurrentPosition();
-        if(map.getPosition(vectoidPosition.x + 1, vectoidPosition.y) == 1 && map.getPosition(vectoidPosition.x - 1, vectoidPosition.y) == 1){
-            if(map.getPosition(vectoidPosition.x, vectoidPosition.y  - 1) == 1 ){
-                if(v.getPrevPosition().y == vectoidPosition.y  - 1){
+        int nextPosition = map.getPosition(vectoidPosition.x+1, vectoidPosition.y);
+        if(vectoidPosition.x != 0) {
+            if (map.getPosition(vectoidPosition.x + 1, vectoidPosition.y) == 1 && map.getPosition(vectoidPosition.x - 1, vectoidPosition.y) == 1) {
+                if (map.getPosition(vectoidPosition.x, vectoidPosition.y - 1) == 1) {
+                    if (v.getPrevPosition().y == vectoidPosition.y - 1) {
 
-                    if(flip){
-                        MoveRight(v, vectoidPosition);
-                        flip = !flip;
-                    }else{
-                        MoveLeft(v, vectoidPosition);
-                        flip = !flip;
+                        if (!v.hasFlipped()) {
+                            if (lastTrajectory == 'l') {
+                                MoveRight(v, vectoidPosition);
+                                System.out.println(v + "has gone right");
+                                v.setFlip(true);
+                                lastTrajectory = 'r';
+                                return true;
+
+
+                            } else {
+                                MoveLeft(v, vectoidPosition);
+                                v.setFlip(true);
+                                System.out.println(v + "has gone right");
+                                lastTrajectory = 'l';
+                                return true;
+
+                            }
+
+                        } else {
+                            if (v.getTrajectory() == 'r') {
+
+                                MoveRight(v, vectoidPosition);
+                                return true;
+
+                            } else {
+
+                                MoveLeft(v, vectoidPosition);
+                                return true;
+
+                            }
+
+                        }
                     }
 
-                }else{
+                } else if (map.getPosition(vectoidPosition.x, vectoidPosition.y + 1) == 1) {
+                    MoveDown(v, vectoidPosition);
+                    return true;
+                } else {
+                    if (v.getTrajectory() == 'r') {
 
-                    MoveUp(v, vectoidPosition);
-                }
+                        MoveRight(v, vectoidPosition);
+                        return true;
 
+                    } else {
 
+                        MoveLeft(v, vectoidPosition);
+                        return true;
 
-            }else if(map.getPosition(vectoidPosition.x, vectoidPosition.y+1) == 1 ){
-                MoveDown(v, vectoidPosition);
-            }else{
-                if(v.getTrajectory() == 'r'){
-
-                    MoveRight(v, vectoidPosition);
-
-                }else{
-
-                    MoveLeft(v, vectoidPosition);
+                    }
 
                 }
-
             }
-        }else if(map.getPosition(vectoidPosition.x, vectoidPosition.y+1) == 1 && (vectoidPosition.y + 1 != v.getPrevPosition().y)){
+        }
+        if(map.getPosition(vectoidPosition.x, vectoidPosition.y+1) == 1 && (vectoidPosition.y + 1 != v.getPrevPosition().y)){
 
             MoveDown(v, vectoidPosition);
+            return true;
 
         }else if(map.getPosition(vectoidPosition.x, vectoidPosition.y  - 1) == 1 && (vectoidPosition.y - 1 != v.getPrevPosition().y)){
 
             MoveUp(v, vectoidPosition);
+            return true;
 
         }else if(map.getPosition(vectoidPosition.x + 1, vectoidPosition.y) == 1 && (vectoidPosition.x + 1 != v.getPrevPosition().x)){
 
             MoveRight(v, vectoidPosition);
+            return true;
 
         }else if(map.getPosition(vectoidPosition.x - 1, vectoidPosition.y) == 1 && (vectoidPosition.x - 1 != v.getPrevPosition().x)){
 
             MoveLeft(v, vectoidPosition);
+            return true;
 
         }
 
         if(map.getPosition(vectoidPosition.x, vectoidPosition.y + 1) == 3 ){
             MoveDown(v, vectoidPosition);
+            return true;
         }
-
+        return false;
     }
 
     /**
@@ -80,8 +117,11 @@ public class VectoidAI {
      */
     private void MoveRight(Vectoid v, Point vectoidPosition){
         v.setTrajectory('r');
+        int msMod = 0;
+        if(v.isSlowed())
+            msMod=2;
         if(v.getPositionOffset() < cellSize)
-            v.setPositionOffset(v.getPositionOffset() + v.getMs());
+            v.setPositionOffset(v.getPositionOffset() + v.getMs() - msMod);
         else{
             v.setPrevPosition(vectoidPosition);
             v.setCurrentPosition(new Point(vectoidPosition.x + 1, vectoidPosition.y));
@@ -97,8 +137,11 @@ public class VectoidAI {
      */
     private void MoveLeft(Vectoid v, Point vectoidPosition){
         v.setTrajectory('l');
+        int msMod = 0;
+        if(v.isSlowed())
+            msMod=2;
         if(v.getPositionOffset() < cellSize)
-            v.setPositionOffset(v.getPositionOffset() + v.getMs());
+            v.setPositionOffset(v.getPositionOffset() + v.getMs()-msMod);
         else{
             v.setPrevPosition(vectoidPosition);
             v.setCurrentPosition(new Point(vectoidPosition.x - 1, vectoidPosition.y));
@@ -114,8 +157,11 @@ public class VectoidAI {
      */
     private void MoveUp(Vectoid v, Point vectoidPosition){
         v.setTrajectory('u');
+        int msMod = 0;
+        if(v.isSlowed())
+            msMod=2;
         if(v.getPositionOffset() < cellSize)
-            v.setPositionOffset(v.getPositionOffset() + v.getMs());
+            v.setPositionOffset(v.getPositionOffset() + v.getMs()-msMod);
         else {
             v.setPrevPosition(vectoidPosition);
             v.setCurrentPosition(new Point(vectoidPosition.x, vectoidPosition.y - 1));
@@ -131,8 +177,11 @@ public class VectoidAI {
      */
     private void MoveDown(Vectoid v, Point vectoidPosition){
         v.setTrajectory('d');
+        int msMod = 0;
+        if(v.isSlowed())
+            msMod=2;
         if(v.getPositionOffset() < cellSize)
-            v.setPositionOffset(v.getPositionOffset() + v.getMs());
+            v.setPositionOffset(v.getPositionOffset() + v.getMs()-msMod);
         else {
             v.setPrevPosition(vectoidPosition);
             v.setCurrentPosition(new Point(vectoidPosition.x, vectoidPosition.y + 1));
@@ -147,18 +196,12 @@ public class VectoidAI {
         else
             return false;
     }
-}
 
-/*
-            if(v.getPositionOffset() <= 50){
-                if(flip){
-                    flip = !flip;
-                    v.setTrajectory('r');
-                }else{
-                    flip = !flip;
-                    v.setTrajectory('l');
-                }
-            }else{
-                v.setPositionOffset(v.getPositionOffset() + 1);
-            }
- */
+    private int generateRandomNumber(){
+        int upperbound = 10;
+        rand = new Random();
+
+
+        return rand.nextInt(upperbound);
+    }
+}

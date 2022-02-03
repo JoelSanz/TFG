@@ -7,7 +7,7 @@ import java.awt.image.BufferedImage;
 public class
 RedVectoid extends Vectoid {
     public RedVectoid(int hp,  BufferedImage sprite) {
-        super(1, 1, hp, 3, "red", 0, sprite);
+        super(1, 1, hp, 4, "red", 0, sprite);
     }
 
 }

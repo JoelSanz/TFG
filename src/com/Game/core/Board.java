@@ -15,6 +15,9 @@ import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 
@@ -22,14 +25,14 @@ import java.util.Arrays;
 
 public class Board extends JPanel implements Runnable {
     private VectoidAI ai;
-    private int frameCount = 0, waitTime = 0, hp, interestCost = 100, reward;
-    boolean showRanges =  true, waveSpawnig = false, activeWave = false, towerClicked, nextWavePrev = true, heatMapActive;
+    private int frameCount = 0, waitTime = 0, hp, interestCost = 1000, reward;
+    boolean showRanges =  true, waveSpawnig = false, activeWave = false, towerClicked, nextWavePrev = true, heatMapActive, main, creatingLevel, started, selectingLevel;
     Tower tower, towerSelected;
     Thread thread = new Thread(this);
     static GraphicsDevice device = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice();
     int h = device.getDisplayMode().getHeight();
     int w = device.getDisplayMode().getWidth();
-    Map map = new Map();
+    Map map = new Map("Maps/Map4.level");
     private ArrayList<Tower> towerList = new ArrayList<Tower>(1);
     private BufferedImage background, vectoidImage, blueTower1, blueTower2, blueTower3, redTower1, redTower2 ,redTower3, greenTower1, greenTower2, greenTower3, purpleTower1, purpleTower2,
             purpleTower3, interestBonus, hpBonus, blueVectoid, greenVectoid, redVectoid, purpleVectoid;
@@ -37,6 +40,7 @@ public class Board extends JPanel implements Runnable {
     private Frame frame;
     Tower[][] towerMap= new Tower[22][18];
     int [][] heatMap = new int[22][18];
+    int[][] newLevel = new int[22][18];
     public ArrayList<Vectoid> vectoidList = new ArrayList<Vectoid>(1);
     public ArrayList<Color> palette = new ArrayList<Color>(6);
     MouseInput mouse = new MouseInput(this);
@@ -47,6 +51,7 @@ public class Board extends JPanel implements Runnable {
     DPSChart dpsMeter;
     int waveCounter = 0;
     Vectoid vectoidNextWave, vectoidThisWave;
+    CSVWriterCustom writer;
 
     public Board(Frame frame){
         switch(w){
@@ -75,12 +80,20 @@ public class Board extends JPanel implements Runnable {
         this.frame = frame;
         heatMapActive = false;
         this.setLayout(null);
-        this.dpsMeter = new DPSChart("Damage this Round", cellSize);
-        this.add(dpsMeter.getPane());
+
+        main = true;
+
         //this.remove(dpsMeter.getPane());
         thread.start();
+        started=false;
+        selectingLevel = false;
+        creatingLevel = false;
         this.frame.addMouseListener(mouse);
-
+        this.dpsMeter = new DPSChart("Damage this Round", cellSize);
+        this.add(dpsMeter.getPane());
+        this.dpsMeter.setVisible(false);
+        this.dpsMeter.getPane().setVisible(false);
+        writer = new CSVWriterCustom("Game.csv");
 
 
     }
@@ -98,6 +111,7 @@ public class Board extends JPanel implements Runnable {
         vectoidNextWave = new GreenVectoid(600, greenVectoid);
         vectoidThisWave = vectoidNextWave;
         initPalette();
+
         //setPreferredSize(new Dimension(h, w));
     }
 
@@ -146,11 +160,7 @@ public class Board extends JPanel implements Runnable {
         greenVectoid = scale(greenVectoid, cellSize, cellSize);
         redVectoid = scale(redVectoid, cellSize, cellSize);
 
-
-
         background = scale(background, w, h);
-
-
     }
 
     /**
@@ -163,27 +173,32 @@ public class Board extends JPanel implements Runnable {
         Graphics2D g2 =  (Graphics2D) g;
         g.drawImage(background, 0, 0, null);
         g2.setFont(new Font("Times New Roman", Font.PLAIN, fontSize));
+        if(main){
+            paintMainMenu(g2);
+        }else if(creatingLevel){
+            generateLevel(g2);
+        }else if(selectingLevel){
+            selectLevel(g2);
 
-        paintGameMap(g2);
-        paintEnemyPath(g2);
-        paintTowerMenu(g2);
-        paintChartMenu(g2);
-        paintBonusMenu(g2);
-        paintInfoMenu(g2);
-        paintOptionsMenu(g2);
-        paintTowerMap(g2);
-        drawLaser(g2);
+        }else{
+            paintGameMap(g2);
+            paintEnemyPath(g2);
+            paintTowerMenu(g2);
+            paintChartMenu(g2);
+            paintBonusMenu(g2);
+            paintInfoMenu(g2);
+            paintOptionsMenu(g2);
+            paintTowerMap(g2);
+            drawLaser(g2);
 
-        if(towerClicked){
-            drawRangeOnMovingTower(towerSelected, g2);
-            paintTowerClicked(g2);
+            if(towerClicked){
+                drawRangeOnMovingTower(towerSelected, g2);
+                paintTowerClicked(g2);
+            }
+            if (activeWave) {
+                paintVectoids(g2);
+            }
         }
-        if (activeWave) {
-            paintVectoids(g2);
-
-        }
-
-
     }
 
     /**
@@ -193,14 +208,14 @@ public class Board extends JPanel implements Runnable {
     public void run() {
         initBoard();
 
-        while(true) {
+        while (true) {
             repaint();
 
-            if(waveSpawnig && waitTime > 20000000 && !wave.doneSpawning()){
+            if (waveSpawnig && waitTime > 20000000 && !wave.doneSpawning()) {
                 spawnVectoids();
                 waitTime = 0;
             }
-            if(frameCount > 1500000) {
+            if (frameCount > 1500000) {
 
                 update();
                 frameCount = 0;
@@ -208,6 +223,7 @@ public class Board extends JPanel implements Runnable {
             frameCount++;
             waitTime++;
         }
+
 
 
     }
@@ -240,6 +256,9 @@ public class Board extends JPanel implements Runnable {
                             }else{
                                 calculateDamage(t, v);
                                 if (v.getHp() <= 0) {
+                                    String[] data = {t.getTowerType(), t.getPosition().x+"_"+t.getPosition().y, "Kill", v.getVectoidType(), "0", Integer.toString(this.waveCounter), "\n"};
+                                    this.writer.writeData(data);
+                                    t.getWriter().writeData(data);
                                     heatMap[v.getCurrentPosition().x][v.getCurrentPosition().y]++;
                                     deleteVectoid(v);
                                     repaint();
@@ -290,6 +309,28 @@ public class Board extends JPanel implements Runnable {
             graphics2D.dispose();
         }
         return scaledImage;
+    }
+
+    private void paintMainMenu(Graphics2D g2){
+        g2.setFont(new Font("Times New Roman", Font.PLAIN, fontSize*2));
+        BasicStroke stroke;
+        stroke = new BasicStroke(3,2, 2);
+        g2.setStroke(stroke);
+        g2.setColor(Color.white);
+        g2.drawRect(w/2 - (cellSize*5), cellSize *5, cellSize*10, cellSize*3);
+        g2.drawString("Start Game", w/2 - (cellSize*2 + cellSize/2), cellSize *7);
+        g2.drawRect(w/2 - (cellSize*5), cellSize *9, cellSize*10, cellSize*3);
+        g2.drawString("Select Map", w/2 - (cellSize*2 + cellSize/2), cellSize *10 + cellSize/2 + cellSize/3);
+        g2.drawRect(w/2 - (cellSize*5), cellSize *13, cellSize*10, cellSize*3);
+        g2.drawString("Generate Level", w/2 - (cellSize*2 + cellSize/2), cellSize *14 + cellSize/2 + cellSize/3);
+        g2.drawRect(w/2 - (cellSize*5), cellSize *17, cellSize*10, cellSize*3);
+        g2.drawString("Exit", w/2 - cellSize, cellSize *18 + cellSize/2 + cellSize/3);
+        g2.setFont(new Font("Times New Roman", Font.PLAIN, fontSize));
+
+    }
+
+    private void paintLevelCreator(Graphics2D g2){
+
     }
     /**
      *
@@ -526,7 +567,7 @@ public class Board extends JPanel implements Runnable {
 
         if(vectoidNextWave != null) {
             g2.drawImage(vectoidThisWave.getSprite(), xInit + cellSize, yInit + cellSize * 2, null);
-            g2.drawString(vectoidThisWave.getHp() + " HP", xInit + cellSize + vectoidThisWave.getSprite().getWidth() + cellSize /2, yInit + cellSize * 2 +vectoidThisWave.getSprite().getHeight()/2);
+            g2.drawString(vectoidThisWave.getHp() + " HP   Reward:" + this.reward + "$", xInit + cellSize + vectoidThisWave.getSprite().getWidth() + cellSize /2, yInit + cellSize * 2 +vectoidThisWave.getSprite().getHeight()/2);
         }
 
 
@@ -601,7 +642,83 @@ public class Board extends JPanel implements Runnable {
         }
     }
 
+    public void checkSelectingLevelClick(int x, int y){
 
+        if(x >= w/2 - (cellSize*5) && y >= cellSize *5 && x<= w/2 - (cellSize*5) + cellSize*10 && y <= cellSize *8){
+            this.map = new Map("Maps/Map1.level");
+            ai = new VectoidAI(map, cellSize);
+            System.out.println("clicked map 1");
+            selectingLevel = false;
+            repaint();
+        }else if(x >= w/2 - (cellSize*5) && y >= cellSize *9 && x<= w/2 - (cellSize*5) + cellSize*10 && y <= cellSize *12){
+            this.map = new Map("Maps/Map2.level");
+            ai = new VectoidAI(map, cellSize);
+            selectingLevel = false;
+        }else if(x >= w/2 - (cellSize*5) && y >= cellSize *13 && x<= w/2 - (cellSize*5) + cellSize*10 && y <= cellSize *16){
+            this.map = new Map("Maps/Map3.level");
+            ai = new VectoidAI(map, cellSize);
+            selectingLevel = false;
+
+        }
+        /*
+        g2.drawRect(w/2 - (cellSize*5), cellSize *5, cellSize*10, cellSize*3);
+        g2.drawString("Map 1", w/2 - (cellSize*2 + cellSize/2), cellSize *7);
+        g2.drawRect(w/2 - (cellSize*5), cellSize *9, cellSize*10, cellSize*3);
+        g2.drawString("Map 2", w/2 - (cellSize*2 + cellSize/2), cellSize *10 + cellSize/2 + cellSize/3);
+        g2.drawRect(w/2 - (cellSize*5), cellSize *13, cellSize*10, cellSize*3);
+        g2.drawString("Map 3", w/2 - (cellSize*2 + cellSize/2), cellSize *14 + cellSize/2 + cellSize/3);*/
+    }
+    public void checkCreatingLevelClick(int x, int y){
+        if(x >= cellSize && y >= cellSize && x<= cellSize * 24 && y <= cellSize * 19){
+
+            int posX = (x / cellSize) - 1;
+            int posY = (y / cellSize) - 1;
+                if(newLevel[posX][posY] == 3)
+                    newLevel[posX][posY] = 0;
+                else
+                    newLevel[posX][posY] = newLevel[posX][posY] + 1;
+
+        }else if(x >= w/2 + (cellSize*5) && y >= cellSize *3 && x<= w/2 + (cellSize*15) && y <= cellSize * 6){
+            saveLevel();
+
+        }else if(x >= w/2 + (cellSize*5) && y >= cellSize *7 && x<= w/2 + (cellSize*15) && y <= cellSize * 10){
+            newLevel = new int[22][18];
+
+        }else if(x >= w/2 + (cellSize*5) && y >= cellSize *11 && x<= w/2 + (cellSize*15) && y <= cellSize * 14){
+            newLevel = new int[22][18];
+            main=true;
+            creatingLevel = false;
+        }
+
+    }
+
+    public void checkMainMenuClick(int x, int y){
+        int initX;
+
+        initX = w/2 - (cellSize*5);
+
+        if(x >= initX && y >= cellSize *5 && x<= initX + cellSize * 10 && y <= cellSize * 8)
+        {
+
+            started = true;
+            main = false;
+            this.dpsMeter.getPane().setVisible(true);
+            repaint();
+        }else if(x >= initX && y >= cellSize *9 && x<= initX + cellSize * 10 && y <= cellSize * 12){
+            selectingLevel = true;
+            main = false;
+
+        }else if(x >= initX && y >= cellSize *13 && x<= initX + cellSize * 10 && y <= cellSize * 16){
+            main=false;
+            creatingLevel = true;
+
+
+        }else if(x >= initX && y >= cellSize *17 && x<= initX + cellSize * 10 && y <= cellSize * 20){
+            System.exit(0); // stop program
+            frame.dispose(); // close window
+        }
+
+    }
     /**
      * Checks which menu was clicked and calls the appropiate function
      * @param x An integer containing the x coordinate on screen of the mouse click
@@ -641,7 +758,7 @@ public class Board extends JPanel implements Runnable {
 
                 }
                 else{
-                    lastInfoMessage = "you broke ass bitch, you got no monaaaaay";
+                    lastInfoMessage = "No tens suficients Diners!";
                 }
                 towerClicked = false;
             }else{
@@ -678,8 +795,14 @@ public class Board extends JPanel implements Runnable {
 
         }
         if(x >= (cellSize * 37) && y >= (cellSize * 20 + cellSize/2) && x<= (cellSize * 41) && y<= (cellSize * 22 + cellSize/2)){
-            System.exit(0); // stop program
+            for(Tower t:towerList){
+                t.getWriter().closeWriter();
+            }
+            this.writer.closeWriter();
             frame.dispose(); // close window
+            System.exit(0); // stop program
+
+
 
         }
         if(x >= (cellSize * 25) && y >= (cellSize * 22 + cellSize/2) && x<= (cellSize * 30) && y<= (cellSize * 25)){
@@ -778,13 +901,13 @@ public class Board extends JPanel implements Runnable {
                 money = money - interestCost;
                 incBonusRate();
             }else
-                lastInfoMessage = "You are broke";
+                lastInfoMessage = "No tens suficients Diners!";
         }else if(x >= (cellSize * 27) && y >= (cellSize * 9) && x<= (cellSize * 28) && y<= (cellSize * 10)){
-            if(money >= 50){
-                money = money - 50;
+            if(money >= 1000){
+                money = money - 1000;
                 hp = hp + 5;
             }else
-                lastInfoMessage = "you are broke";
+                lastInfoMessage = "No tens suficients Diners!";
         }
 
     }
@@ -868,7 +991,8 @@ public class Board extends JPanel implements Runnable {
             towerSelected.setPosition(new Point(posX, posY));
             towerList.add(towerSelected);
             towerMap[posX][posY] = towerSelected;
-            towerSelected.setDpsChart(new DPSChart("Tower damage", cellSize));
+            towerSelected.setDpsChart(new DPSChart(towerSelected.getTowerType() + " Tower damage", cellSize));
+            towerSelected.setWriter(new CSVWriterCustom(towerSelected.getTowerType() + "placed_x_"+ posX +"_y_"+ posY+".csv"));
             this.add(towerSelected.getDpsChart().getPane());
         }
         return placed;
@@ -910,8 +1034,6 @@ public class Board extends JPanel implements Runnable {
     public void drawRangeOnMovingTower(Tower t, Graphics2D g2){
         int x = MouseInfo.getPointerInfo().getLocation().x;
         int y = MouseInfo.getPointerInfo().getLocation().y;
-
-
 
         switch (t.getTowerType()) {
             case "blue" -> g2.setColor(new Color(0, 0, 255, 60));
@@ -961,6 +1083,9 @@ public class Board extends JPanel implements Runnable {
     public void calculateDamage(Tower t, Vectoid v) {
 
         //drawLaser(t, v);
+        int damage;
+        v.setSlowed(false);
+
         double dmgMod = 1.0;
         if(t.delay == 0) {
             switch (t.getTowerType()){
@@ -979,6 +1104,7 @@ public class Board extends JPanel implements Runnable {
                 case "blue":
                     if(v.getVectoidType() == "purple")
                         dmgMod = 1.5;
+                    v.setSlowed(true);
                     break;
                 default:
                     lastInfoMessage = "Unkown Tower type";
@@ -986,9 +1112,13 @@ public class Board extends JPanel implements Runnable {
 
 
             }
+            damage = (int) round(t.getDamage()*dmgMod, 0);
 
-            v.setHp(v.getHp() -(int) round(t.getDamage()*dmgMod, 0));
-            dpsMeter.addData(t.getDamage());
+            String[] data = {t.getTowerType(), t.getPosition().x+"_"+t.getPosition().y, "Damage", v.getVectoidType(), Integer.toString(damage), Integer.toString(this.waveCounter),  "\n"};
+            v.setHp(v.getHp() - damage);
+            dpsMeter.addData(damage);
+            this.writer.writeData(data);
+            t.getWriter().writeData(data);
             t.getDpsChart().addData(t.getDamage());
             //Afegeixo informacio al fitxer
             t.delay = t.maxDelay;
@@ -1001,8 +1131,10 @@ public class Board extends JPanel implements Runnable {
 
     public void spawnVectoids(){
         ArrayList<Point> spawnPoints = getSpawnPoints();
-        for(Point p : spawnPoints)
+        for(Point p : spawnPoints) {
             wave.spawnVectoid(vectoidList, p, waveCounter, blueVectoid, vectoidThisWave);
+
+        }
 
     }
 
@@ -1130,6 +1262,123 @@ public class Board extends JPanel implements Runnable {
         towerMap[t.getPosition().x][t.getPosition().y] = null;
         towerList.remove(t);
         towerSelected = null;
+    }
+
+    public boolean isMainMenu(){
+        return this.main;
+    }
+
+    public boolean isCreatingLevel(){
+        return this.creatingLevel;
+    }
+
+    public boolean isSelectingLevel(){
+        return this.selectingLevel;
+    }
+
+    public void generateLevel(Graphics2D g2){
+
+        BasicStroke stroke, stroke_thin;
+        stroke = new BasicStroke(3,2, 2);
+        stroke_thin = new BasicStroke(1, 1, 1);
+        g2.setFont(new Font("Times New Roman", Font.PLAIN, fontSize*2));
+        for(int x = 0; x < 22; x++){
+            for (int y = 0; y < 18; y++){
+                g2.setColor(Color.lightGray);
+                if(newLevel[x][y] == 0) {
+                    g2.drawRect(cellSize + (x * cellSize), (cellSize) + (y * cellSize), cellSize, cellSize);
+                }else if(newLevel[x][y] == 1) {
+
+                    g2.setStroke(stroke);
+                    g2.drawRect(cellSize + (x * cellSize), (cellSize) + (y * cellSize), cellSize, cellSize);
+                    g2.setStroke(stroke_thin);
+                    g2.setColor(new Color(255, 255, 255, 80));
+                    g2.fillRect(cellSize + (x * cellSize), (cellSize) + (y* cellSize), cellSize, cellSize);
+                    g2.setColor(Color.lightGray);
+
+                }else if(newLevel[x][y] == 2){
+                    g2.setStroke(stroke);
+                    g2.setColor(Color.yellow);
+                    g2.drawRect(cellSize + (x * cellSize), (cellSize) + (y * cellSize), cellSize, cellSize);
+                    g2.setColor(new Color(255, 255, 0, 80));
+                    g2.fillRect(cellSize + (x * cellSize), (cellSize) + (y * cellSize), cellSize, cellSize);
+                    g2.setColor(Color.lightGray);
+                    g2.setStroke(stroke_thin);
+                }else if(newLevel[x][y] == 3){
+
+                    g2.setStroke(stroke);
+                    g2.setColor(Color.red);
+                    g2.drawRect(cellSize + (x * cellSize), (cellSize) + (y * cellSize), cellSize, cellSize);
+                    g2.setColor(new Color(255, 0, 0, 80));
+                    g2.fillRect(cellSize + (x * cellSize), (cellSize) + (y* cellSize), cellSize, cellSize);
+                    g2.setColor(Color.lightGray);
+                    g2.setStroke(stroke_thin);
+
+                }
+
+            }
+        }
+        g2.setStroke(stroke);
+        g2.drawRect(w/2 + (cellSize*5), cellSize *3, cellSize*10, cellSize*3);
+        g2.drawString("Save Map", w/2 + (cellSize*8), cellSize * 5-cellSize/3);
+        g2.drawRect(w/2 + (cellSize*5), cellSize *7, cellSize*10, cellSize*3);
+        g2.drawString("Delete", w/2 + (cellSize*9)-cellSize/2, cellSize * 9-cellSize/3);
+        g2.drawRect(w/2 + (cellSize*5), cellSize *11, cellSize*10, cellSize*3);
+        g2.drawString("Main Menu", w/2 + (cellSize*8), cellSize * 13-cellSize/3);
+
+
+        g2.setStroke(stroke_thin);
+        g2.setFont(new Font("Times New Roman", Font.PLAIN, fontSize));
+    }
+
+    public void selectLevel(Graphics2D g2){
+
+        getLevels();
+        g2.setFont(new Font("Times New Roman", Font.PLAIN, fontSize*2));
+        BasicStroke stroke;
+        stroke = new BasicStroke(3,2, 2);
+        g2.setStroke(stroke);
+        g2.setColor(Color.white);
+        g2.drawRect(w/2 - (cellSize*5), cellSize *5, cellSize*10, cellSize*3);
+        g2.drawString("Map 1", w/2 - (cellSize*2 + cellSize/2), cellSize *7);
+        g2.drawRect(w/2 - (cellSize*5), cellSize *9, cellSize*10, cellSize*3);
+        g2.drawString("Map 2", w/2 - (cellSize*2 + cellSize/2), cellSize *10 + cellSize/2 + cellSize/3);
+        g2.drawRect(w/2 - (cellSize*5), cellSize *13, cellSize*10, cellSize*3);
+        g2.drawString("Map 3", w/2 - (cellSize*2 + cellSize/2), cellSize *14 + cellSize/2 + cellSize/3);
+
+        g2.setFont(new Font("Times New Roman", Font.PLAIN, fontSize));
+    }
+
+    public void saveLevel(){
+
+        StringBuilder sb = new StringBuilder(); // String Builder to create the table structure before writing it to the file.
+
+
+        for (int i = 0; i<18; i++) {
+
+            for (int j = 0; j < 22; j++) {
+                sb.append(newLevel[j][i]).append("\t"); // Add tab to delimite the elements
+            }
+
+            sb.append("\r\n"); // Add new line character
+        }
+
+
+        Path path = Paths.get("Maps/Map4.level"); // The path to your file
+
+        try {
+            Files.write(path, sb.toString().getBytes()); // Writes to that path the bytes in the string from the stringBuilder object.
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+    }
+
+    public String[] getLevels(){
+        File directoryPath = new File("./Maps");
+        String[] levelList = directoryPath.list();
+
+        return levelList;
     }
 }
 
